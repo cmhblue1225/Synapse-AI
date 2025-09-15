@@ -1,0 +1,92 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Embedding Test</title>
+    <script src="https://unpkg.com/@supabase/supabase-js@2"></script>
+</head>
+<body>
+    <h1>임베딩 테스트</h1>
+    <button onclick="testEmbeddingStats()">임베딩 통계 확인</button>
+    <button onclick="testFirstNode()">첫 번째 노드 임베딩 확인</button>
+    <pre id="output"></pre>
+
+    <script>
+        const supabaseUrl = 'https://esbjgvnlqzseomhbsimz.supabase.co'
+        const supabaseKey = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImVzYmpndm5scXpzZW9taGJzaW16Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3MzY2NzIxNDMsImV4cCI6MjA1MjI0ODE0M30.wladfKAdhsrmEJIgbNRWTwCQRmLwJ1PFOgFU-lL3yHY'
+
+        const supabase = window.supabase.createClient(supabaseUrl, supabaseKey)
+
+        async function testEmbeddingStats() {
+            const output = document.getElementById('output');
+            output.textContent = 'Testing embedding stats...\n';
+
+            try {
+                // RPC 함수 테스트
+                const { data, error } = await supabase.rpc('get_embedding_statistics');
+
+                if (error) {
+                    output.textContent += `RPC Error: ${error.message}\n`;
+                } else {
+                    output.textContent += `RPC Success: ${JSON.stringify(data, null, 2)}\n`;
+                }
+
+                // 직접 테이블 조회 테스트
+                const { data: tableData, error: tableError } = await supabase
+                    .from('knowledge_nodes')
+                    .select('id, title, embedding')
+                    .limit(5);
+
+                if (tableError) {
+                    output.textContent += `Table Error: ${tableError.message}\n`;
+                } else {
+                    output.textContent += `Table Query Success: ${tableData.length} nodes\n`;
+                    tableData.forEach((node, index) => {
+                        const hasEmbedding = node.embedding !== null;
+                        const embeddingLength = hasEmbedding ?
+                            (typeof node.embedding === 'string' ?
+                                JSON.parse(node.embedding).length :
+                                node.embedding.length) : 0;
+                        output.textContent += `  ${index + 1}. ${node.title}: ${hasEmbedding ? `임베딩 있음 (${embeddingLength}차원)` : '임베딩 없음'}\n`;
+                    });
+                }
+
+            } catch (err) {
+                output.textContent += `JavaScript Error: ${err.message}\n`;
+            }
+        }
+
+        async function testFirstNode() {
+            const output = document.getElementById('output');
+            output.textContent = 'Testing first node embedding...\n';
+
+            try {
+                const { data, error } = await supabase
+                    .from('knowledge_nodes')
+                    .select('id, title, embedding')
+                    .not('embedding', 'is', null)
+                    .limit(1);
+
+                if (error) {
+                    output.textContent += `Error: ${error.message}\n`;
+                } else if (data && data.length > 0) {
+                    const node = data[0];
+                    output.textContent += `Node: ${node.title}\n`;
+                    output.textContent += `Embedding exists: ${node.embedding !== null}\n`;
+
+                    if (node.embedding) {
+                        const embedding = typeof node.embedding === 'string' ?
+                            JSON.parse(node.embedding) : node.embedding;
+                        output.textContent += `Embedding dimensions: ${embedding.length}\n`;
+                        output.textContent += `First 5 values: [${embedding.slice(0, 5).join(', ')}...]\n`;
+                    }
+                } else {
+                    output.textContent += 'No nodes with embeddings found\n';
+                }
+
+            } catch (err) {
+                output.textContent += `JavaScript Error: ${err.message}\n`;
+            }
+        }
+    </script>
+</body>
+</html>

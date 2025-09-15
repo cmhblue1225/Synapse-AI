@@ -1,0 +1,30 @@
+services:
+  - type: web
+    name: synapse-knowledge-assistant
+    runtime: node
+    plan: starter
+    region: singapore
+    branch: main
+    buildCommand: npm ci && npm run build
+    startCommand: npx serve -s dist -l 10000
+    healthCheckPath: /
+    envVars:
+      - key: NODE_ENV
+        value: production
+      - key: VITE_SUPABASE_URL
+        fromDatabase:
+          name: synapse-env
+          property: VITE_SUPABASE_URL
+      - key: VITE_SUPABASE_ANON_KEY
+        fromDatabase:
+          name: synapse-env
+          property: VITE_SUPABASE_ANON_KEY
+      - key: VITE_OPENAI_API_KEY
+        fromDatabase:
+          name: synapse-env
+          property: VITE_OPENAI_API_KEY
+
+databases:
+  - name: synapse-env
+    databaseName: config
+    plan: starter
