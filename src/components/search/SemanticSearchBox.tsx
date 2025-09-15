@@ -1,5 +1,6 @@
 import React, { useState, useEffect, useCallback } from 'react';
 import { Search, Sparkles, Filter, X } from 'lucide-react';
+import { useNavigate } from 'react-router-dom';
 import { embeddingService } from '../../services/embedding.service';
 import { useAuthStore } from '../../stores/auth.store';
 import { toast } from 'react-toastify';
@@ -27,6 +28,7 @@ export function SemanticSearchBox({
   placeholder = '의미 기반 검색으로 관련 지식을 찾아보세요...'
 }: SemanticSearchBoxProps) {
   const { user } = useAuthStore();
+  const navigate = useNavigate();
   const [query, setQuery] = useState('');
   const [results, setResults] = useState<SemanticSearchResult[]>([]);
   const [loading, setLoading] = useState(false);
@@ -226,10 +228,14 @@ export function SemanticSearchBox({
           </div>
           <div className="divide-y">
             {results.map((result) => (
-              <div key={result.id} className="p-4 hover:bg-gray-50 cursor-pointer">
+              <div
+                key={result.id}
+                className="p-4 hover:bg-gray-50 cursor-pointer transition-colors"
+                onClick={() => navigate(`/app/knowledge/${result.id}`)}
+              >
                 <div className="flex items-start justify-between">
                   <div className="flex-1">
-                    <h3 className="font-medium text-gray-900 mb-1">
+                    <h3 className="font-medium text-gray-900 mb-1 hover:text-purple-600 transition-colors">
                       {result.title}
                     </h3>
                     <p className="text-sm text-gray-600 line-clamp-2 mb-2">

@@ -22,7 +22,7 @@ interface CreateNodeForm {
 export const CreateNodePage: React.FC = () => {
   const navigate = useNavigate();
   const [isSubmitting, setIsSubmitting] = useState(false);
-  const [showAITools, setShowAITools] = useState(false);
+  const [showAITools] = useState(false);
   const [createdNodeId, setCreatedNodeId] = useState<string | null>(null);
   const [tagsInput, setTagsInput] = useState('');
   const [aiData, setAiData] = useState<{ summary?: string; tags?: string[] }>({});
@@ -371,93 +371,165 @@ export const CreateNodePage: React.FC = () => {
   };
 
   return (
-    <div className="max-w-6xl mx-auto">
-      {/* Header */}
-      <div className="mb-8">
-        <div className="flex items-center mb-4">
-          <button
-            onClick={() => navigate('/app/knowledge')}
-            className="flex items-center text-gray-600 hover:text-gray-900 mr-4"
-          >
-            <ArrowLeftIcon className="h-5 w-5 mr-2" />
-            지식 노드로 돌아가기
-          </button>
+    <div className="max-w-7xl mx-auto">
+      {/* 프리미엄 헤더 */}
+      <div className="relative overflow-hidden bg-gradient-to-br from-knowledge-500 via-primary-600 to-ai-500 rounded-t-3xl p-8 text-white shadow-strong mb-8">
+        {/* 배경 장식 */}
+        <div className="absolute top-0 right-0 -mt-8 -mr-8 w-40 h-40 bg-white/10 rounded-full blur-xl"></div>
+        <div className="absolute bottom-0 left-0 -mb-12 -ml-12 w-48 h-48 bg-white/5 rounded-full blur-2xl"></div>
+
+        <div className="relative z-10">
+          <div className="flex items-center justify-between mb-6">
+            <div className="flex items-center space-x-4">
+              <button
+                onClick={() => navigate('/app/knowledge')}
+                className="flex items-center text-white/80 hover:text-white hover:bg-white/20 px-4 py-2 rounded-xl transition-all duration-200 group backdrop-blur-sm"
+              >
+                <ArrowLeftIcon className="h-5 w-5 mr-2 group-hover:-translate-x-1 transition-transform duration-200" />
+                지식 노드로 돌아가기
+              </button>
+            </div>
+            <div className="flex items-center space-x-3 text-sm">
+              <div className="flex items-center space-x-2">
+                <ShieldCheckIcon className="h-4 w-4 text-green-300" />
+                <span>보안 검증 활성화</span>
+              </div>
+              <div className="w-px h-4 bg-white/20"></div>
+              <div className="flex items-center space-x-2">
+                <SparklesIcon className="h-4 w-4 text-yellow-300" />
+                <span>AI 도구 지원</span>
+              </div>
+            </div>
+          </div>
+
+          <div className="flex items-center space-x-4 mb-4">
+            <div className="p-3 bg-white/20 rounded-2xl backdrop-blur-sm">
+              <SparklesIcon className="h-8 w-8 text-white" />
+            </div>
+            <div>
+              <h1 className="text-3xl font-bold mb-2">새 지식 노드 생성</h1>
+              <p className="text-white/90 text-lg">
+                새로운 지식을 추가하고 AI의 도움으로 체계적으로 관리해보세요
+              </p>
+            </div>
+          </div>
+
+          {/* 진행 단계 표시 */}
+          <div className="flex items-center space-x-8 mt-6">
+            <div className="flex items-center space-x-2">
+              <div className="w-3 h-3 bg-white rounded-full"></div>
+              <span className="text-sm font-medium">기본 정보</span>
+            </div>
+            <div className="flex items-center space-x-2">
+              <div className="w-3 h-3 border-2 border-white/40 rounded-full"></div>
+              <span className="text-sm text-white/60">AI 분석</span>
+            </div>
+            <div className="flex items-center space-x-2">
+              <div className="w-3 h-3 border-2 border-white/40 rounded-full"></div>
+              <span className="text-sm text-white/60">저장 완료</span>
+            </div>
+          </div>
         </div>
-        <h1 className="text-3xl font-bold text-gray-900">새 지식 노드 생성</h1>
-        <p className="mt-2 text-gray-600">
-          새로운 지식을 추가하고 AI 도구로 자동 분석해보세요.
-        </p>
       </div>
 
       <div className="grid grid-cols-1 xl:grid-cols-3 gap-8">
         {/* 메인 폼 */}
-        <div className="xl:col-span-2">
-          <form onSubmit={handleSubmit(onSubmit)} className="bg-white shadow-sm rounded-lg">
-            <div className="px-6 py-4 border-b border-gray-200">
-              <div className="flex items-center justify-between">
-                <h2 className="text-lg font-medium text-gray-900">노드 정보</h2>
-                <div className="flex items-center text-sm text-green-600">
-                  <ShieldCheckIcon className="h-4 w-4 mr-1" />
-                  보안 검증 활성화
+        <div className="xl:col-span-2 space-y-6">
+          <form onSubmit={handleSubmit(onSubmit)} className="space-y-6">
+            {/* 프리미엄 메인 카드 */}
+            <div className="card-premium border-0 shadow-strong">
+              <div className="relative overflow-hidden bg-gradient-to-r from-white via-white to-primary-50/30 rounded-t-2xl px-8 py-6 border-b border-primary-100">
+                <div className="absolute top-0 right-0 w-32 h-32 bg-gradient-to-br from-primary-100/50 to-knowledge-100/50 rounded-full blur-xl opacity-50"></div>
+                <div className="relative z-10">
+                  <h2 className="text-2xl font-bold text-neutral-900 mb-2">노드 정보</h2>
+                  <p className="text-neutral-600">지식의 핵심 내용을 구조화하여 입력해주세요</p>
                 </div>
               </div>
-            </div>
 
-            <div className="p-6 space-y-6">
-              {/* 제목 */}
-              <div>
-                <label htmlFor="title" className="block text-sm font-medium text-gray-700 mb-2">
-                  제목 *
-                </label>
-                <input
-                  id="title"
-                  type="text"
-                  {...register('title', {
-                    required: '제목은 필수입니다',
-                    minLength: { value: 1, message: '제목을 입력해주세요' }
-                  })}
-                  className="w-full border border-gray-300 rounded-md px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent"
-                  placeholder="지식 노드의 제목을 입력하세요"
-                />
-                {errors.title && (
-                  <p className="mt-1 text-sm text-red-600">{errors.title.message}</p>
-                )}
-              </div>
+              <div className="p-8 space-y-8">
+                {/* 제목 */}
+                <div className="group">
+                  <label htmlFor="title" className="block text-lg font-bold text-neutral-900 mb-4">
+                    제목 *
+                  </label>
+                  <div className="relative">
+                    <div className="absolute inset-0 bg-gradient-to-r from-primary-600 to-knowledge-500 rounded-2xl opacity-0 group-focus-within:opacity-100 blur-sm transition-all duration-300"></div>
+                    <div className="relative">
+                      <input
+                        id="title"
+                        type="text"
+                        {...register('title', {
+                          required: '제목은 필수입니다',
+                          minLength: { value: 1, message: '제목을 입력해주세요' }
+                        })}
+                        className="input-premium text-xl font-semibold py-4 px-6 border-2 border-neutral-200 focus:border-primary-400 group-focus-within:shadow-glow"
+                        placeholder="멋진 제목을 입력해주세요..."
+                      />
+                    </div>
+                  </div>
+                  {errors.title && (
+                    <p className="mt-3 text-sm text-error-600 font-medium flex items-center">
+                      <span className="w-2 h-2 bg-error-500 rounded-full mr-2"></span>
+                      {errors.title.message}
+                    </p>
+                  )}
+                </div>
 
-              {/* 내용 */}
-              <div>
-                <label className="block text-sm font-medium text-gray-700 mb-2">
-                  내용 *
-                </label>
-                <RichTextEditor
-                  content={watchedContent}
-                  onChange={(content) => setValue('content', content, { shouldValidate: true })}
-                  placeholder="지식 노드의 내용을 상세히 작성하세요..."
-                />
-                {errors.content && (
-                  <p className="mt-1 text-sm text-red-600">{errors.content.message}</p>
-                )}
-              </div>
+                {/* 내용 */}
+                <div className="group">
+                  <label className="block text-lg font-bold text-neutral-900 mb-4">
+                    내용 *
+                  </label>
+                  <div className="relative">
+                    <div className="absolute inset-0 bg-gradient-to-r from-knowledge-600 to-ai-500 rounded-2xl opacity-0 group-focus-within:opacity-100 blur-sm transition-all duration-300"></div>
+                    <div className="relative border-2 border-neutral-200 group-focus-within:border-knowledge-400 rounded-2xl overflow-hidden transition-all duration-300">
+                      <RichTextEditor
+                        content={watchedContent}
+                        onChange={(content) => setValue('content', content, { shouldValidate: true })}
+                        placeholder="지식의 핵심을 자세히 작성해주세요. 마크다운 문법을 지원합니다..."
+                      />
+                    </div>
+                  </div>
+                  {errors.content && (
+                    <p className="mt-3 text-sm text-error-600 font-medium flex items-center">
+                      <span className="w-2 h-2 bg-error-500 rounded-full mr-2"></span>
+                      {errors.content.message}
+                    </p>
+                  )}
+                </div>
 
-              {/* 노드 타입 */}
-              <div>
-                <label htmlFor="nodeType" className="block text-sm font-medium text-gray-700 mb-2">
-                  노드 타입
-                </label>
-                <select
-                  id="nodeType"
-                  {...register('nodeType')}
-                  className="w-full border border-gray-300 rounded-md px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent"
-                >
-                  <option value="Note">노트 (Note)</option>
-                  <option value="WebClip">웹클립 (WebClip)</option>
-                  <option value="Document">문서 (Document)</option>
-                  <option value="Image">이미지 (Image)</option>
-                  <option value="Concept">개념 (Concept)</option>
-                </select>
-                <p className="mt-1 text-xs text-gray-500">
-                  PDF 요구사항에 따른 5가지 노드 타입입니다.
-                </p>
+                {/* 노드 타입 */}
+                <div>
+                  <label htmlFor="nodeType" className="block text-lg font-bold text-neutral-900 mb-4">
+                    노드 타입
+                  </label>
+                  <div className="grid grid-cols-2 md:grid-cols-5 gap-3">
+                    {[
+                      { value: 'Note', label: '노트', icon: '📝', desc: '일반 텍스트' },
+                      { value: 'WebClip', label: '웹클립', icon: '🌐', desc: '웹 컨텐츠' },
+                      { value: 'Document', label: '문서', icon: '📄', desc: '구조화된 문서' },
+                      { value: 'Image', label: '이미지', icon: '🖼️', desc: '시각적 자료' },
+                      { value: 'Concept', label: '개념', icon: '💡', desc: '추상적 개념' }
+                    ].map((type) => (
+                      <label key={type.value} className="relative">
+                        <input
+                          type="radio"
+                          value={type.value}
+                          {...register('nodeType')}
+                          className="sr-only peer"
+                        />
+                        <div className="card-interactive p-4 text-center border-2 border-neutral-200 peer-checked:border-primary-500 peer-checked:bg-primary-50 peer-checked:shadow-glow cursor-pointer">
+                          <div className="text-2xl mb-2">{type.icon}</div>
+                          <div className="font-semibold text-neutral-900 mb-1">{type.label}</div>
+                          <div className="text-xs text-neutral-600">{type.desc}</div>
+                        </div>
+                      </label>
+                    ))}
+                  </div>
+                  <p className="mt-3 text-sm text-neutral-500 bg-neutral-50 rounded-xl p-3">
+                    💡 각 노드 타입은 특별한 AI 분석과 시각화 기능을 제공합니다
+                  </p>
+                </div>
               </div>
 
               {/* 태그 */}
@@ -745,57 +817,178 @@ export const CreateNodePage: React.FC = () => {
               </div>
             </div>
 
-            {/* 제출 버튼 */}
-            <div className="px-6 py-4 bg-gray-50 border-t border-gray-200 flex justify-between items-center rounded-b-lg">
-              <button
-                type="button"
-                onClick={() => navigate('/app/knowledge')}
-                className="px-4 py-2 text-sm font-medium text-gray-700 bg-white border border-gray-300 rounded-md hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500"
-              >
-                취소
-              </button>
-              <button
-                type="submit"
-                disabled={!isValid || isSubmitting}
-                className="px-6 py-2 text-sm font-medium text-white bg-blue-600 border border-transparent rounded-md hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500 disabled:opacity-50 disabled:cursor-not-allowed flex items-center"
-              >
-                {isSubmitting ? (
-                  <>
-                    <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-white mr-2"></div>
-                    생성 중...
-                  </>
-                ) : (
-                  <>
-                    <SparklesIcon className="h-4 w-4 mr-2" />
-                    노드 생성
-                  </>
+            {/* 프리미엄 제출 버튼 영역 */}
+            <div className="card-premium border-0 shadow-strong">
+              <div className="p-8 bg-gradient-to-r from-neutral-50 via-white to-primary-50/30">
+                <div className="flex items-center justify-between">
+                  <div>
+                    <h3 className="text-lg font-bold text-neutral-900 mb-1">지식 노드 생성</h3>
+                    <p className="text-neutral-600">AI가 자동으로 분석하여 지식 그래프에 연결합니다</p>
+                  </div>
+                  <div className="flex items-center space-x-4">
+                    <button
+                      type="button"
+                      onClick={() => navigate('/app/knowledge')}
+                      className="btn-secondary py-3 px-6 font-semibold"
+                    >
+                      취소
+                    </button>
+                    <button
+                      type="submit"
+                      disabled={!isValid || isSubmitting}
+                      className="btn-primary py-4 px-8 text-lg font-bold relative overflow-hidden group disabled:opacity-50 disabled:cursor-not-allowed"
+                    >
+                      <div className="absolute inset-0 bg-gradient-to-r from-knowledge-500 to-ai-500 opacity-0 group-hover:opacity-100 transition-opacity duration-200"></div>
+                      <div className="relative z-10 flex items-center">
+                        {isSubmitting ? (
+                          <>
+                            <div className="animate-spin rounded-full h-5 w-5 border-2 border-white border-t-transparent mr-3"></div>
+                            생성 중...
+                          </>
+                        ) : (
+                          <>
+                            <SparklesIcon className="h-5 w-5 mr-3" />
+                            노드 생성하기
+                          </>
+                        )}
+                      </div>
+                    </button>
+                  </div>
+                </div>
+
+                {/* 진행 상태 표시 */}
+                {isSubmitting && (
+                  <div className="mt-6 p-4 bg-primary-50 rounded-2xl border border-primary-200">
+                    <div className="flex items-center space-x-3 mb-3">
+                      <div className="animate-spin rounded-full h-5 w-5 border-2 border-primary-600 border-t-transparent"></div>
+                      <span className="font-semibold text-primary-900">지식 노드를 생성하고 있습니다</span>
+                    </div>
+                    <div className="space-y-2 text-sm text-primary-700">
+                      <div className="flex items-center">
+                        <div className="w-2 h-2 bg-primary-500 rounded-full mr-3 animate-pulse"></div>
+                        보안 검증 및 데이터 처리
+                      </div>
+                      <div className="flex items-center">
+                        <div className="w-2 h-2 bg-primary-300 rounded-full mr-3"></div>
+                        AI 임베딩 생성
+                      </div>
+                      <div className="flex items-center">
+                        <div className="w-2 h-2 bg-primary-200 rounded-full mr-3"></div>
+                        지식 그래프 연결
+                      </div>
+                    </div>
+                  </div>
                 )}
-              </button>
+              </div>
             </div>
           </form>
         </div>
 
-        {/* AI 도구 사이드바 */}
-        <div className="xl:col-span-1">
+        {/* 프리미엄 AI 도구 사이드바 */}
+        <div className="xl:col-span-1 space-y-6">
           {watchedTitle && watchedContent ? (
-            <AIEnhancedNode
-              nodeId={createdNodeId}
-              title={watchedTitle}
-              content={watchedContent}
-              currentTags={watchedTags || []}
-              onUpdate={handleAIUpdate}
-            />
+            <div className="card-premium border-0 shadow-strong">
+              <div className="bg-gradient-to-r from-ai-500 via-primary-600 to-knowledge-500 text-white p-6 rounded-t-2xl">
+                <div className="flex items-center space-x-3 mb-4">
+                  <div className="p-2 bg-white/20 rounded-xl">
+                    <SparklesIcon className="h-6 w-6" />
+                  </div>
+                  <div>
+                    <h3 className="font-bold text-lg">AI 분석 도구</h3>
+                    <p className="text-white/80 text-sm">실시간 지능형 분석</p>
+                  </div>
+                </div>
+              </div>
+              <div className="p-6">
+                <AIEnhancedNode
+                  nodeId={createdNodeId}
+                  title={watchedTitle}
+                  content={watchedContent}
+                  currentTags={watchedTags || []}
+                  onUpdate={handleAIUpdate}
+                />
+              </div>
+            </div>
           ) : (
-            <div className="bg-white shadow-sm rounded-lg p-6">
-              <div className="text-center">
-                <SparklesIcon className="mx-auto h-12 w-12 text-gray-400" />
-                <h3 className="mt-2 text-sm font-medium text-gray-900">AI 도구 사용 가능</h3>
-                <p className="mt-1 text-sm text-gray-500">
-                  제목과 내용을 입력하면 AI 도구가 활성화됩니다.
+            <div className="card-premium border-0 shadow-strong">
+              <div className="p-8 text-center">
+                <div className="w-20 h-20 gradient-ai rounded-3xl flex items-center justify-center mx-auto mb-6 shadow-glow-ai">
+                  <SparklesIcon className="h-10 w-10 text-white" />
+                </div>
+                <h3 className="text-xl font-bold text-neutral-900 mb-3">AI 도구 대기 중</h3>
+                <p className="text-neutral-600 mb-6 leading-relaxed">
+                  제목과 내용을 입력하시면<br />
+                  강력한 AI 분석 도구들이 활성화됩니다
                 </p>
+                <div className="space-y-3 text-left">
+                  {[
+                    { icon: '🤖', text: '자동 요약 생성' },
+                    { icon: '🏷️', text: '스마트 태그 추천' },
+                    { icon: '🔗', text: '지식 연결 분석' },
+                    { icon: '📊', text: '내용 구조 분석' }
+                  ].map((feature, index) => (
+                    <div key={index} className="flex items-center space-x-3 p-2 bg-neutral-50 rounded-lg">
+                      <span className="text-lg">{feature.icon}</span>
+                      <span className="text-sm font-medium text-neutral-700">{feature.text}</span>
+                    </div>
+                  ))}
+                </div>
               </div>
             </div>
           )}
+
+          {/* 빠른 도움말 */}
+          <div className="card-premium border-0 shadow-soft">
+            <div className="p-6">
+              <h4 className="font-bold text-neutral-900 mb-4 flex items-center">
+                <span className="text-lg mr-2">💡</span>
+                작성 팁
+              </h4>
+              <div className="space-y-3 text-sm text-neutral-600">
+                <div className="flex items-start space-x-2">
+                  <span className="w-2 h-2 bg-primary-500 rounded-full mt-2 flex-shrink-0"></span>
+                  <span>구체적이고 명확한 제목으로 시작하세요</span>
+                </div>
+                <div className="flex items-start space-x-2">
+                  <span className="w-2 h-2 bg-knowledge-500 rounded-full mt-2 flex-shrink-0"></span>
+                  <span>마크다운 문법을 활용해 구조화된 내용을 작성하세요</span>
+                </div>
+                <div className="flex items-start space-x-2">
+                  <span className="w-2 h-2 bg-ai-500 rounded-full mt-2 flex-shrink-0"></span>
+                  <span>관련 파일이 있다면 함께 업로드하세요</span>
+                </div>
+                <div className="flex items-start space-x-2">
+                  <span className="w-2 h-2 bg-success-500 rounded-full mt-2 flex-shrink-0"></span>
+                  <span>AI 태그 추천을 활용해 발견 가능성을 높이세요</span>
+                </div>
+              </div>
+            </div>
+          </div>
+
+          {/* 최근 활동 */}
+          <div className="card-premium border-0 shadow-soft">
+            <div className="p-6">
+              <h4 className="font-bold text-neutral-900 mb-4 flex items-center">
+                <span className="text-lg mr-2">📈</span>
+                최근 활동
+              </h4>
+              <div className="space-y-3">
+                {[
+                  { action: '노드 생성', count: 12, period: '이번 주' },
+                  { action: 'AI 분석', count: 28, period: '이번 달' },
+                  { action: '태그 생성', count: 45, period: '전체' }
+                ].map((stat, index) => (
+                  <div key={index} className="flex items-center justify-between p-3 bg-neutral-50 rounded-xl">
+                    <span className="text-sm font-medium text-neutral-700">{stat.action}</span>
+                    <div className="text-right">
+                      <div className="text-lg font-bold text-neutral-900">{stat.count}</div>
+                      <div className="text-xs text-neutral-500">{stat.period}</div>
+                    </div>
+                  </div>
+                ))}
+              </div>
+            </div>
+          </div>
         </div>
       </div>
     </div>

@@ -23,7 +23,8 @@ import type {
   ProfileSettings,
   NotificationSettings,
   ThemeSettings,
-  PrivacySettings
+  PrivacySettings,
+  ExperimentalSettings
 } from '../services/settings.service';
 
 
@@ -72,6 +73,13 @@ export const SettingsPage: React.FC = () => {
     confirmPassword: ''
   });
 
+  // Experimental Features State
+  const [experimentalFeatures, setExperimentalFeatures] = useState({
+    aiAutoTagSuggestion: false,
+    advancedGraphLayout: false,
+    realtimeCollaboration: false
+  });
+
   // 설정 로드
   useEffect(() => {
     const loadSettings = async () => {
@@ -90,6 +98,9 @@ export const SettingsPage: React.FC = () => {
         }
         if (settings.privacy) {
           setPrivacySettings(settings.privacy);
+        }
+        if (settings.experimental) {
+          setExperimentalFeatures(settings.experimental);
         }
 
         console.log('✅ 설정 로드 완료:', settings);
@@ -205,6 +216,46 @@ export const SettingsPage: React.FC = () => {
     } catch (error) {
       console.error('캐시 삭제 오류:', error);
       toast.error('캐시 삭제에 실패했습니다.');
+    }
+    setIsLoading(false);
+  };
+
+  const handleDataImport = async (event: React.ChangeEvent<HTMLInputElement>) => {
+    const file = event.target.files?.[0];
+    if (!file) return;
+
+    setIsLoading(true);
+    try {
+      const text = await file.text();
+      const importData = JSON.parse(text);
+
+      // 데이터 유효성 검증
+      if (!importData.knowledge_nodes || !Array.isArray(importData.knowledge_nodes)) {
+        throw new Error('올바르지 않은 데이터 형식입니다.');
+      }
+
+      await settingsService.importUserData(importData);
+      toast.success(`${importData.knowledge_nodes.length}개의 지식 노드를 가져왔습니다.`);
+    } catch (error: any) {
+      console.error('데이터 가져오기 오류:', error);
+      toast.error(`데이터 가져오기에 실패했습니다: ${error.message}`);
+    }
+    setIsLoading(false);
+
+    // 파일 입력 초기화
+    if (event.target) {
+      event.target.value = '';
+    }
+  };
+
+  const handleExperimentalUpdate = async () => {
+    setIsLoading(true);
+    try {
+      await settingsService.updateExperimentalSettings(experimentalFeatures);
+      toast.success('실험적 기능 설정이 업데이트되었습니다.');
+    } catch (error) {
+      console.error('실험적 기능 설정 업데이트 오류:', error);
+      toast.error('실험적 기능 설정 업데이트에 실패했습니다.');
     }
     setIsLoading(false);
   };
@@ -602,8 +653,14 @@ export const SettingsPage: React.FC = () => {
                       </div>
                       <label className="inline-flex items-center py-2 px-4 border border-gray-300 shadow-sm text-sm font-medium rounded-md text-gray-700 bg-white hover:bg-gray-50 cursor-pointer">
                         <ArrowUpTrayIcon className="h-4 w-4 mr-2" />
-                        데이터 가져오기
-                        <input type="file" accept=".json" className="hidden" />
+                        {isLoading ? '가져오는 중...' : '데이터 가져오기'}
+                        <input
+                          type="file"
+                          accept=".json"
+                          onChange={handleDataImport}
+                          disabled={isLoading}
+                          className="hidden"
+                        />
                       </label>
                     </div>
                   </div>
@@ -639,17 +696,51 @@ export const SettingsPage: React.FC = () => {
                     <h4 className="text-sm font-medium text-gray-900 mb-2">실험적 기능</h4>
                     <div className="space-y-3">
                       <label className="flex items-center">
-                        <input type="checkbox" className="rounded border-gray-300 text-primary-600 shadow-sm focus:border-primary-300 focus:ring focus:ring-primary-200 focus:ring-opacity-50" />
+                        <input
+                          type="checkbox"
+                          checked={experimentalFeatures.aiAutoTagSuggestion}
+                          onChange={(e) => setExperimentalFeatures({
+                            ...experimentalFeatures,
+                            aiAutoTagSuggestion: e.target.checked
+                          })}
+                          className="rounded border-gray-300 text-primary-600 shadow-sm focus:border-primary-300 focus:ring focus:ring-primary-200 focus:ring-opacity-50"
+                        />
                         <span className="ml-2 text-sm text-gray-700">AI 기반 자동 태그 제안</span>
                       </label>
                       <label className="flex items-center">
-                        <input type="checkbox" className="rounded border-gray-300 text-primary-600 shadow-sm focus:border-primary-300 focus:ring focus:ring-primary-200 focus:ring-opacity-50" />
+                        <input
+                          type="checkbox"
+                          checked={experimentalFeatures.advancedGraphLayout}
+                          onChange={(e) => setExperimentalFeatures({
+                            ...experimentalFeatures,
+                            advancedGraphLayout: e.target.checked
+                          })}
+                          className="rounded border-gray-300 text-primary-600 shadow-sm focus:border-primary-300 focus:ring focus:ring-primary-200 focus:ring-opacity-50"
+                        />
                         <span className="ml-2 text-sm text-gray-700">고급 그래프 레이아웃</span>
                       </label>
                       <label className="flex items-center">
-                        <input type="checkbox" className="rounded border-gray-300 text-primary-600 shadow-sm focus:border-primary-300 focus:ring focus:ring-primary-200 focus:ring-opacity-50" />
+                        <input
+                          type="checkbox"
+                          checked={experimentalFeatures.realtimeCollaboration}
+                          onChange={(e) => setExperimentalFeatures({
+                            ...experimentalFeatures,
+                            realtimeCollaboration: e.target.checked
+                          })}
+                          className="rounded border-gray-300 text-primary-600 shadow-sm focus:border-primary-300 focus:ring focus:ring-primary-200 focus:ring-opacity-50"
+                        />
                         <span className="ml-2 text-sm text-gray-700">실시간 협업 편집</span>
                       </label>
+                    </div>
+
+                    <div className="pt-4">
+                      <button
+                        onClick={handleExperimentalUpdate}
+                        disabled={isLoading}
+                        className="inline-flex justify-center py-2 px-4 border border-transparent shadow-sm text-sm font-medium rounded-md text-white bg-purple-600 hover:bg-purple-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-purple-500 disabled:opacity-50"
+                      >
+                        {isLoading ? '업데이트 중...' : '실험적 기능 설정 저장'}
+                      </button>
                     </div>
                   </div>
 

@@ -120,44 +120,87 @@ export const DashboardPage: React.FC = () => {
   ];
 
   return (
-    <div className="max-w-7xl mx-auto">
-      {/* Welcome section */}
-      <div className="mb-8">
-        <h1 className="text-3xl font-bold text-gray-900">
-          안녕하세요, {user?.username || user?.first_name || user?.email || '사용자'}님! 👋
-        </h1>
-        <p className="mt-2 text-gray-600">
-          오늘도 새로운 지식을 발견해보세요. 현재까지 {nodeStats?.total_nodes || 0}개의 노드를 생성하셨습니다.
-          {nodeStats?.recent_activity_days > 0 && (
-            <span className="text-primary-600"> 최근 {nodeStats.recent_activity_days}일 동안 활발하게 활동하고 계시네요!</span>
-          )}
-        </p>
+    <div className="space-y-8 animate-fade-in-up">
+      {/* Hero Welcome Section */}
+      <div className="relative overflow-hidden bg-gradient-to-br from-primary-600 via-knowledge-500 to-ai-600 rounded-3xl p-8 text-white shadow-strong">
+        {/* Background decorations */}
+        <div className="absolute top-0 right-0 -mt-16 -mr-16 w-48 h-48 bg-white/10 rounded-full blur-3xl"></div>
+        <div className="absolute bottom-0 left-0 -mb-12 -ml-12 w-36 h-36 bg-white/5 rounded-full blur-2xl"></div>
+
+        <div className="relative z-10">
+          <div className="flex items-start justify-between">
+            <div className="flex-1">
+              <h1 className="text-4xl font-bold mb-4">
+                안녕하세요, {user?.username || user?.first_name || '사용자'}님! ✨
+              </h1>
+              <p className="text-lg text-white/90 leading-relaxed mb-6">
+                오늘도 새로운 지식을 발견해보세요. 현재까지 <span className="font-bold text-white">{nodeStats?.total_nodes || 0}개</span>의 노드를 생성하셨습니다.
+                {nodeStats?.recent_activity_days > 0 && (
+                  <span className="block mt-1 text-white/80">최근 {nodeStats.recent_activity_days}일 동안 활발하게 활동하고 계시네요!</span>
+                )}
+              </p>
+
+              {/* Quick action buttons */}
+              <div className="flex flex-wrap gap-3">
+                <Link
+                  to="/app/knowledge/create"
+                  className="inline-flex items-center space-x-2 px-6 py-3 bg-white/20 hover:bg-white/30 backdrop-blur-sm rounded-2xl font-semibold transition-all duration-300 hover:transform hover:scale-105 hover:shadow-glow"
+                >
+                  <PlusIcon className="h-5 w-5" />
+                  <span>새 노드 생성</span>
+                </Link>
+                <Link
+                  to="/app/ai-chat"
+                  className="inline-flex items-center space-x-2 px-6 py-3 bg-white/20 hover:bg-white/30 backdrop-blur-sm rounded-2xl font-semibold transition-all duration-300 hover:transform hover:scale-105 hover:shadow-glow"
+                >
+                  <svg className="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13 10V3L4 14h7v7l9-11h-7z" />
+                  </svg>
+                  <span>AI 채팅</span>
+                </Link>
+              </div>
+            </div>
+
+            {/* Stats circle */}
+            <div className="hidden lg:block ml-8">
+              <div className="w-32 h-32 bg-white/20 backdrop-blur-sm rounded-full flex items-center justify-center">
+                <div className="text-center">
+                  <div className="text-3xl font-bold">{nodeStats?.total_nodes || 0}</div>
+                  <div className="text-sm opacity-90">노드</div>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
       </div>
 
-      {/* Stats grid */}
-      <div className="grid grid-cols-1 gap-5 sm:grid-cols-2 lg:grid-cols-4 mb-8">
-        {stats.map((stat) => (
-          <div key={stat.name} className="bg-white overflow-hidden shadow rounded-lg">
-            <div className="p-5">
-              <div className="flex items-center">
-                <div className="flex-shrink-0">
-                  <stat.icon className="h-6 w-6 text-gray-400" aria-hidden="true" />
+      {/* Premium Stats Grid */}
+      <div className="grid grid-cols-1 gap-6 sm:grid-cols-2 lg:grid-cols-4">
+        {stats.map((stat, index) => (
+          <div
+            key={stat.name}
+            className="card-interactive group bg-white/80 backdrop-blur-sm border border-white/20 animate-fade-in-up"
+            style={{ animationDelay: `${index * 0.1}s` }}
+          >
+            <div className="p-6">
+              <div className="flex items-center justify-between mb-4">
+                <div className="p-3 bg-gradient-to-r from-primary-500 to-knowledge-500 rounded-2xl group-hover:shadow-glow transition-all duration-300">
+                  <stat.icon className="h-6 w-6 text-white" aria-hidden="true" />
                 </div>
-                <div className="ml-5 w-0 flex-1">
-                  <dl>
-                    <dt className="text-sm font-medium text-gray-500 truncate">{stat.name}</dt>
-                    <dd className="flex items-baseline">
-                      <div className="text-2xl font-semibold text-gray-900">{stat.value}</div>
-                      <div
-                        className={`ml-2 flex items-baseline text-sm font-semibold ${
-                          stat.changeType === 'positive' ? 'text-green-600' : 'text-red-600'
-                        }`}
-                      >
-                        {stat.change}
-                      </div>
-                    </dd>
-                  </dl>
+                <div className={`px-3 py-1 rounded-full text-xs font-semibold ${
+                  stat.changeType === 'positive'
+                    ? 'bg-success-100 text-success-700'
+                    : 'bg-neutral-100 text-neutral-600'
+                }`}>
+                  {stat.change}
                 </div>
+              </div>
+
+              <div>
+                <dt className="text-sm font-semibold text-neutral-600 mb-2">{stat.name}</dt>
+                <dd className="text-3xl font-bold text-neutral-900 group-hover:text-primary-700 transition-colors duration-200">
+                  {stat.value}
+                </dd>
               </div>
             </div>
           </div>
@@ -165,30 +208,48 @@ export const DashboardPage: React.FC = () => {
       </div>
 
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
-        {/* Quick actions */}
+        {/* Quick Actions */}
         <div className="lg:col-span-2">
-          <div className="bg-white shadow rounded-lg">
-            <div className="px-6 py-4 border-b border-gray-200">
-              <h3 className="text-lg font-medium text-gray-900">빠른 작업</h3>
+          <div className="card-premium">
+            <div className="p-6 border-b border-neutral-200">
+              <div className="flex items-center space-x-3">
+                <div className="p-2 bg-primary-100 rounded-lg">
+                  <svg className="h-5 w-5 text-primary-600" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13 10V3L4 14h7v7l9-11h-7z" />
+                  </svg>
+                </div>
+                <h3 className="text-xl font-bold text-neutral-900">빠른 작업</h3>
+              </div>
+              <p className="mt-2 text-sm text-neutral-600">자주 사용하는 기능들에 빠르게 접근하세요</p>
             </div>
             <div className="p-6">
-              <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
-                {quickActions.map((action) => (
+              <div className="grid grid-cols-1 gap-6 sm:grid-cols-2">
+                {quickActions.map((action, index) => (
                   <Link
                     key={action.name}
                     to={action.href}
-                    className="relative group bg-white p-6 focus-within:ring-2 focus-within:ring-inset focus-within:ring-primary-500 border border-gray-200 rounded-lg hover:border-primary-300 hover:shadow-md transition-all duration-200"
+                    className="relative group card-interactive bg-gradient-to-br from-white to-neutral-50 animate-fade-in-up"
+                    style={{ animationDelay: `${index * 0.1}s` }}
                   >
-                    <div>
-                      <span className={`rounded-lg inline-flex p-3 ${action.color} text-white`}>
-                        <action.icon className="h-6 w-6" aria-hidden="true" />
-                      </span>
+                    <div className="p-6">
+                      <div className="flex items-start space-x-4">
+                        <div className={`p-3 rounded-2xl shadow-soft transition-all duration-300 group-hover:shadow-glow ${action.color}`}>
+                          <action.icon className="h-6 w-6 text-white" aria-hidden="true" />
+                        </div>
+                        <div className="flex-1">
+                          <h3 className="text-lg font-bold text-neutral-900 group-hover:text-primary-700 transition-colors duration-200">
+                            {action.name}
+                          </h3>
+                          <p className="mt-2 text-sm text-neutral-600 leading-relaxed">{action.description}</p>
+                        </div>
+                      </div>
                     </div>
-                    <div className="mt-4">
-                      <h3 className="text-lg font-medium text-gray-900 group-hover:text-primary-600">
-                        {action.name}
-                      </h3>
-                      <p className="mt-2 text-sm text-gray-500">{action.description}</p>
+
+                    {/* Hover arrow */}
+                    <div className="absolute top-4 right-4 opacity-0 group-hover:opacity-100 transition-all duration-200 transform group-hover:translate-x-1">
+                      <svg className="w-5 h-5 text-primary-600" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5l7 7-7 7" />
+                      </svg>
                     </div>
                   </Link>
                 ))}
@@ -196,61 +257,103 @@ export const DashboardPage: React.FC = () => {
             </div>
           </div>
 
-          {/* Recent nodes */}
-          <div className="mt-8 bg-white shadow rounded-lg">
-            <div className="px-6 py-4 border-b border-gray-200">
-              <h3 className="text-lg font-medium text-gray-900">최근 노드</h3>
+          {/* Recent Nodes */}
+          <div className="mt-8 card-premium">
+            <div className="p-6 border-b border-neutral-200">
+              <div className="flex items-center justify-between">
+                <div className="flex items-center space-x-3">
+                  <div className="p-2 bg-knowledge-100 rounded-lg">
+                    <BookOpenIcon className="h-5 w-5 text-knowledge-600" />
+                  </div>
+                  <div>
+                    <h3 className="text-xl font-bold text-neutral-900">최근 노드</h3>
+                    <p className="text-sm text-neutral-600">최근에 작업한 지식 노드들</p>
+                  </div>
+                </div>
+                <Link
+                  to="/app/knowledge"
+                  className="text-sm font-medium text-primary-600 hover:text-primary-700 transition-colors duration-200"
+                >
+                  모두 보기 →
+                </Link>
+              </div>
             </div>
-            <div className="divide-y divide-gray-200">
+
+            <div className="divide-y divide-neutral-100">
               {nodesLoading ? (
                 <div className="p-6">
-                  <div className="animate-pulse space-y-4">
+                  <div className="space-y-4">
                     {[...Array(3)].map((_, i) => (
                       <div key={i} className="flex space-x-4">
-                        <div className="rounded-full bg-gray-200 h-10 w-10"></div>
+                        <div className="skeleton h-12 w-12 rounded-xl"></div>
                         <div className="flex-1 space-y-2">
-                          <div className="h-4 bg-gray-200 rounded w-3/4"></div>
-                          <div className="h-4 bg-gray-200 rounded w-1/2"></div>
+                          <div className="skeleton h-4 rounded w-3/4"></div>
+                          <div className="skeleton h-3 rounded w-1/2"></div>
+                          <div className="flex space-x-2">
+                            <div className="skeleton h-5 w-16 rounded-full"></div>
+                            <div className="skeleton h-5 w-12 rounded-full"></div>
+                          </div>
                         </div>
                       </div>
                     ))}
                   </div>
                 </div>
               ) : recentNodes?.nodes?.length ? (
-                recentNodes.nodes.map((node) => (
+                recentNodes.nodes.map((node, index) => (
                   <Link
                     key={node.id}
                     to={`/app/knowledge/${node.id}`}
-                    className="block hover:bg-gray-50 px-6 py-4"
+                    className="block hover:bg-neutral-50 px-6 py-5 transition-all duration-200 group animate-fade-in-up"
+                    style={{ animationDelay: `${index * 0.1}s` }}
                   >
-                    <div className="flex items-center space-x-4">
+                    <div className="flex items-start space-x-4">
                       <div className="flex-shrink-0">
-                        <BookOpenIcon className="h-6 w-6 text-gray-400" />
+                        <div className="w-12 h-12 bg-gradient-to-r from-primary-500 to-knowledge-500 rounded-xl flex items-center justify-center group-hover:shadow-glow transition-all duration-200">
+                          <BookOpenIcon className="h-6 w-6 text-white" />
+                        </div>
                       </div>
                       <div className="flex-1 min-w-0">
-                        <div className="text-sm font-medium text-gray-900 truncate">
-                          {node.title}
+                        <div className="flex items-start justify-between">
+                          <div className="flex-1 min-w-0 mr-4">
+                            <h4 className="text-base font-semibold text-neutral-900 group-hover:text-primary-700 transition-colors duration-200 truncate">
+                              {node.title}
+                            </h4>
+                            <p className="text-sm text-neutral-600 line-clamp-2 mt-1">
+                              {node.content ? node.content.substring(0, 120) + '...' : '내용 없음'}
+                            </p>
+                          </div>
+                          <div className="opacity-0 group-hover:opacity-100 transition-opacity duration-200">
+                            <svg className="w-5 h-5 text-primary-600" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5l7 7-7 7" />
+                            </svg>
+                          </div>
                         </div>
-                        <div className="text-sm text-gray-500 truncate">
-                          {node.content ? node.content.substring(0, 100) + '...' : '내용 없음'}
-                        </div>
-                        <div className="mt-1 flex items-center space-x-2 text-xs text-gray-400">
-                          <ClockIcon className="h-3 w-3" />
-                          <span>{new Date(node.updated_at || node.created_at).toLocaleDateString('ko-KR')}</span>
+
+                        <div className="mt-3 flex items-center space-x-3">
+                          <div className="flex items-center space-x-1 text-xs text-neutral-500">
+                            <ClockIcon className="h-3 w-3" />
+                            <span>{new Date(node.updated_at || node.created_at).toLocaleDateString('ko-KR')}</span>
+                          </div>
+
                           {node.tags?.length > 0 && (
-                            <React.Fragment key={`tags-${node.id}`}>
-                              <span>•</span>
+                            <div className="flex items-center space-x-1">
+                              <span className="text-xs text-neutral-400">•</span>
                               <div className="flex space-x-1">
                                 {node.tags.slice(0, 3).map((tag, tagIndex) => (
                                   <span
                                     key={`${node.id}-tag-${tagIndex}-${tag}`}
-                                    className="inline-flex items-center px-2 py-0.5 rounded text-xs font-medium bg-primary-100 text-primary-800"
+                                    className="badge-primary"
                                   >
-                                    {tag}
+                                    #{tag}
                                   </span>
                                 ))}
+                                {node.tags.length > 3 && (
+                                  <span className="text-xs text-neutral-500 font-medium">
+                                    +{node.tags.length - 3}
+                                  </span>
+                                )}
                               </div>
-                            </React.Fragment>
+                            </div>
                           )}
                         </div>
                       </div>
@@ -258,90 +361,129 @@ export const DashboardPage: React.FC = () => {
                   </Link>
                 ))
               ) : (
-                <div className="p-6 text-center">
-                  <BookOpenIcon className="mx-auto h-12 w-12 text-gray-400" />
-                  <h3 className="mt-2 text-sm font-medium text-gray-900">노드가 없습니다</h3>
-                  <p className="mt-1 text-sm text-gray-500">첫 번째 지식 노드를 생성해보세요.</p>
-                  <div className="mt-6">
-                    <Link
-                      to="/app/knowledge/create"
-                      className="inline-flex items-center px-4 py-2 border border-transparent shadow-sm text-sm font-medium rounded-md text-white bg-primary-600 hover:bg-primary-700"
-                    >
-                      <PlusIcon className="-ml-1 mr-2 h-5 w-5" />
-                      새 노드 생성
-                    </Link>
+                <div className="p-12 text-center">
+                  <div className="w-16 h-16 mx-auto bg-gradient-to-r from-primary-100 to-knowledge-100 rounded-2xl flex items-center justify-center mb-4">
+                    <BookOpenIcon className="h-8 w-8 text-primary-600" />
                   </div>
+                  <h3 className="text-lg font-semibold text-neutral-900 mb-2">아직 노드가 없습니다</h3>
+                  <p className="text-neutral-600 mb-6">첫 번째 지식 노드를 생성해서 여정을 시작해보세요.</p>
+                  <Link
+                    to="/app/knowledge/create"
+                    className="btn-primary"
+                  >
+                    <PlusIcon className="h-5 w-5 mr-2" />
+                    새 노드 생성
+                  </Link>
                 </div>
               )}
             </div>
           </div>
         </div>
 
-        {/* Sidebar */}
+        {/* Premium Sidebar */}
         <div className="space-y-8">
           {/* AI 임베딩 현황 */}
           <EmbeddingStatsCard />
 
-          {/* Popular tags */}
-          <div className="bg-white shadow rounded-lg">
-            <div className="px-6 py-4 border-b border-gray-200">
-              <h3 className="text-lg font-medium text-gray-900">인기 태그</h3>
+          {/* Popular Tags */}
+          <div className="card-premium">
+            <div className="p-6 border-b border-neutral-200">
+              <div className="flex items-center space-x-3">
+                <div className="p-2 bg-ai-100 rounded-lg">
+                  <TagIcon className="h-5 w-5 text-ai-600" />
+                </div>
+                <div>
+                  <h3 className="text-lg font-bold text-neutral-900">인기 태그</h3>
+                  <p className="text-xs text-neutral-600">자주 사용되는 태그들</p>
+                </div>
+              </div>
             </div>
             <div className="p-6">
               {tagsLoading ? (
-                <div className="animate-pulse space-y-2">
+                <div className="space-y-3">
                   {[...Array(5)].map((_, i) => (
-                    <div key={i} className="h-4 bg-gray-200 rounded w-full"></div>
+                    <div key={i} className="flex items-center justify-between">
+                      <div className="skeleton h-6 w-20 rounded-full"></div>
+                      <div className="skeleton h-4 w-8 rounded"></div>
+                    </div>
                   ))}
                 </div>
               ) : popularTags?.tags?.length ? (
-                <div className="space-y-3">
+                <div className="space-y-4">
                   {popularTags.tags.map((tag, index) => (
-                    <div key={`popular-tag-${index}-${tag.tag}`} className="flex items-center justify-between">
-                      <span className="text-sm font-medium text-gray-900">#{tag.tag}</span>
-                      <span className="text-sm text-gray-500">{tag.count}</span>
+                    <div key={`popular-tag-${index}-${tag.name}`} className="group flex items-center justify-between p-3 hover:bg-neutral-50 rounded-xl transition-colors duration-200">
+                      <div className="flex items-center space-x-3">
+                        <div className="w-2 h-2 bg-gradient-to-r from-primary-500 to-ai-500 rounded-full"></div>
+                        <span className="text-sm font-semibold text-neutral-900 group-hover:text-primary-700">#{tag.name}</span>
+                      </div>
+                      <div className="flex items-center space-x-2">
+                        <span className="text-xs font-bold text-neutral-600">{tag.count}</span>
+                        <div className="w-16 h-2 bg-neutral-200 rounded-full overflow-hidden">
+                          <div
+                            className="h-full bg-gradient-to-r from-primary-500 to-ai-500 rounded-full transition-all duration-300"
+                            style={{ width: `${Math.min((tag.count / (popularTags.tags[0]?.count || 1)) * 100, 100)}%` }}
+                          ></div>
+                        </div>
+                      </div>
                     </div>
                   ))}
                 </div>
               ) : (
-                <p className="text-sm text-gray-500">아직 태그가 없습니다.</p>
+                <div className="text-center py-8">
+                  <TagIcon className="mx-auto h-12 w-12 text-neutral-400 mb-3" />
+                  <p className="text-sm text-neutral-500">아직 태그가 없습니다.</p>
+                </div>
               )}
             </div>
           </div>
 
-          {/* Activity summary */}
-          <div className="bg-white shadow rounded-lg">
-            <div className="px-6 py-4 border-b border-gray-200">
-              <h3 className="text-lg font-medium text-gray-900">활동 요약</h3>
+          {/* Activity Summary */}
+          <div className="card-premium">
+            <div className="p-6 border-b border-neutral-200">
+              <div className="flex items-center space-x-3">
+                <div className="p-2 bg-success-100 rounded-lg">
+                  <ChartBarIcon className="h-5 w-5 text-success-600" />
+                </div>
+                <div>
+                  <h3 className="text-lg font-bold text-neutral-900">활동 요약</h3>
+                  <p className="text-xs text-neutral-600">지식 활동 현황</p>
+                </div>
+              </div>
             </div>
-            <div className="p-6 space-y-4">
-              <div className="flex items-center justify-between">
-                <span className="text-sm text-gray-600">전체 노드</span>
-                <span className="text-sm font-medium text-gray-900">{nodeStats?.total_nodes || 0}개</span>
+            <div className="p-6">
+              <div className="grid grid-cols-2 gap-4 mb-6">
+                <div className="text-center p-4 bg-gradient-to-br from-primary-50 to-knowledge-50 rounded-2xl">
+                  <div className="text-2xl font-bold text-primary-700">{nodeStats?.total_nodes || 0}</div>
+                  <div className="text-xs text-primary-600 font-medium">전체 노드</div>
+                </div>
+                <div className="text-center p-4 bg-gradient-to-br from-ai-50 to-success-50 rounded-2xl">
+                  <div className="text-2xl font-bold text-ai-700">{nodeStats?.nodes_this_week || 0}</div>
+                  <div className="text-xs text-ai-600 font-medium">이번 주</div>
+                </div>
               </div>
-              <div className="flex items-center justify-between">
-                <span className="text-sm text-gray-600">이번 주 생성</span>
-                <span className="text-sm font-medium text-gray-900">{nodeStats?.nodes_this_week || 0}개</span>
+
+              <div className="space-y-4">
+                <div className="flex items-center justify-between p-3 bg-neutral-50 rounded-xl">
+                  <span className="text-sm font-medium text-neutral-700">연결된 관계</span>
+                  <span className="text-sm font-bold text-neutral-900">{nodeStats?.total_relationships || 0}개</span>
+                </div>
+                <div className="flex items-center justify-between p-3 bg-neutral-50 rounded-xl">
+                  <span className="text-sm font-medium text-neutral-700">활용된 태그</span>
+                  <span className="text-sm font-bold text-neutral-900">{nodeStats?.total_tags || 0}개</span>
+                </div>
               </div>
-              <div className="flex items-center justify-between">
-                <span className="text-sm text-gray-600">연결된 관계</span>
-                <span className="text-sm font-medium text-gray-900">{nodeStats?.total_relationships || 0}개</span>
-              </div>
-              <div className="flex items-center justify-between">
-                <span className="text-sm text-gray-600">활용된 태그</span>
-                <span className="text-sm font-medium text-gray-900">{nodeStats?.total_tags || 0}개</span>
-              </div>
+
               {nodeStats?.most_used_tags?.length > 0 && (
-                <div className="pt-2 border-t border-gray-200">
-                  <span className="text-sm text-gray-600">인기 태그</span>
-                  <div className="mt-2 flex flex-wrap gap-1">
+                <div className="mt-6 pt-6 border-t border-neutral-200">
+                  <h4 className="text-sm font-semibold text-neutral-700 mb-3">최근 인기 태그</h4>
+                  <div className="flex flex-wrap gap-2">
                     {nodeStats.most_used_tags.slice(0, 3).map((tag, index) => (
-                      <span
+                      <div
                         key={index}
-                        className="inline-flex items-center px-2 py-1 rounded-full text-xs font-medium bg-primary-100 text-primary-800"
+                        className="group bg-gradient-to-r from-primary-500 to-ai-500 text-white px-3 py-1.5 rounded-full text-xs font-bold hover:shadow-glow transition-all duration-200 hover:scale-105 cursor-pointer"
                       >
-                        {tag.tag} ({tag.count})
-                      </span>
+                        #{tag.tag} <span className="opacity-75">({tag.count})</span>
+                      </div>
                     ))}
                   </div>
                 </div>

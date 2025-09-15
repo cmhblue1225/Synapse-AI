@@ -31,11 +31,18 @@ export interface PrivacySettings {
   shareAnalytics: boolean;
 }
 
+export interface ExperimentalSettings {
+  aiAutoTagSuggestion: boolean;
+  advancedGraphLayout: boolean;
+  realtimeCollaboration: boolean;
+}
+
 export interface UserSettings {
   profile?: ProfileSettings;
   notifications?: NotificationSettings;
   theme?: ThemeSettings;
   privacy?: PrivacySettings;
+  experimental?: ExperimentalSettings;
 }
 
 class SettingsService {
@@ -82,6 +89,11 @@ class SettingsService {
           profilePublic: false,
           allowSearchIndexing: true,
           shareAnalytics: false
+        },
+        experimental: {
+          aiAutoTagSuggestion: false,
+          advancedGraphLayout: false,
+          realtimeCollaboration: false
         }
       };
 
@@ -252,6 +264,35 @@ class SettingsService {
     }
   }
 
+  // 실험적 기능 설정 업데이트
+  async updateExperimentalSettings(experimentalSettings: ExperimentalSettings): Promise<void> {
+    try {
+      const { data: { user }, error: userError } = await supabase.auth.getUser();
+      if (userError || !user) throw new Error('사용자 인증이 필요합니다');
+
+      const currentSettings = await this.getAllSettings();
+      const updatedSettings = {
+        ...currentSettings,
+        experimental: experimentalSettings
+      };
+
+      const { error } = await supabase
+        .from('profiles')
+        .upsert({
+          id: user.id,
+          settings: updatedSettings,
+          updated_at: new Date().toISOString()
+        });
+
+      if (error) throw error;
+
+      console.log('✅ 실험적 기능 설정 업데이트 완료');
+    } catch (error) {
+      console.error('❌ 실험적 기능 설정 업데이트 실패:', error);
+      throw error;
+    }
+  }
+
   // CSS 변수를 통한 실시간 테마 적용
   private applyThemeSettings(themeSettings: ThemeSettings): void {
     const root = document.documentElement;
@@ -297,7 +338,7 @@ class SettingsService {
       ] = await Promise.all([
         supabase.from('profiles').select('*').eq('id', user.id).single(),
         supabase.from('knowledge_nodes').select('*').eq('user_id', user.id).eq('is_active', true),
-        supabase.rpc('get_user_relationships', { target_user_id: user.id })
+        supabase.from('knowledge_relationships').select('*').eq('user_id', user.id)
       ]);
 
       const exportData = {
@@ -316,6 +357,59 @@ class SettingsService {
       return new Blob([jsonString], { type: 'application/json' });
     } catch (error) {
       console.error('❌ 데이터 내보내기 실패:', error);
+      throw error;
+    }
+  }
+
+  // 사용자 데이터 가져오기
+  async importUserData(importData: any): Promise<void> {
+    try {
+      const { data: { user }, error: userError } = await supabase.auth.getUser();
+      if (userError || !user) throw new Error('사용자 인증이 필요합니다');
+
+      // 데이터 유효성 검증
+      if (!importData.knowledge_nodes || !Array.isArray(importData.knowledge_nodes)) {
+        throw new Error('올바르지 않은 데이터 형식입니다.');
+      }
+
+      // 지식 노드 가져오기
+      const nodesToImport = importData.knowledge_nodes.map((node: any) => ({
+        title: node.title,
+        content: node.content,
+        node_type: node.node_type || 'Knowledge',
+        tags: node.tags || [],
+        metadata: node.metadata || {},
+        user_id: user.id,
+        is_active: true,
+        created_at: new Date().toISOString(),
+        updated_at: new Date().toISOString()
+      }));
+
+      const { data: insertedNodes, error: nodesError } = await supabase
+        .from('knowledge_nodes')
+        .insert(nodesToImport)
+        .select();
+
+      if (nodesError) throw nodesError;
+
+      // 관계 데이터가 있다면 가져오기
+      if (importData.relationships && Array.isArray(importData.relationships) && insertedNodes) {
+        const relationshipsToImport = importData.relationships.map((rel: any) => ({
+          source_node_id: insertedNodes[0].id, // 첫 번째 노드로 임시 설정
+          target_node_id: insertedNodes[1]?.id || insertedNodes[0].id,
+          relationship_type: rel.relationship_type || 'related',
+          user_id: user.id,
+          created_at: new Date().toISOString()
+        }));
+
+        await supabase
+          .from('knowledge_relationships')
+          .insert(relationshipsToImport);
+      }
+
+      console.log('✅ 데이터 가져오기 완료');
+    } catch (error) {
+      console.error('❌ 데이터 가져오기 실패:', error);
       throw error;
     }
   }

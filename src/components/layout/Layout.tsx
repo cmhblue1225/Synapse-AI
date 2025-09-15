@@ -5,7 +5,7 @@ import { Sidebar } from './Sidebar';
 
 export const Layout: React.FC = () => {
   return (
-    <div className="min-h-screen bg-gray-50">
+    <div className="min-h-screen bg-gradient-to-br from-neutral-50 via-white to-primary-50/30">
       {/* Header */}
       <Header />
 
@@ -15,8 +15,8 @@ export const Layout: React.FC = () => {
         <Sidebar />
 
         {/* Main content */}
-        <main className="flex-1 ml-64 pt-16">
-          <div className="p-6">
+        <main className="flex-1 ml-72 pt-20">
+          <div className="p-8 max-w-7xl mx-auto">
             <Outlet />
           </div>
         </main>

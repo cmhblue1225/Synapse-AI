@@ -1,4 +1,4 @@
-import React, { useEffect } from 'react';
+import React, { useEffect, useState } from 'react';
 import { BrowserRouter as Router, Routes, Route, Navigate } from 'react-router-dom';
 import { QueryClientProvider } from '@tanstack/react-query';
 import { ReactQueryDevtools } from '@tanstack/react-query-devtools';
@@ -12,6 +12,9 @@ import { initializeSecurity } from './lib/security';
 
 // Store initialization
 import { useAuthStore } from './stores/auth.store';
+
+// Global Search Modal
+import { GlobalSearchModal } from './components/GlobalSearchModal';
 
 // Layout components
 import { Layout } from './components/layout/Layout';
@@ -35,6 +38,14 @@ import { TagsPage } from './pages/TagsPage';
 import { SettingsPage } from './pages/SettingsPage';
 import { NotFoundPage } from './pages/NotFoundPage';
 
+// Study activity pages
+import { StudyActivitiesPage } from './pages/study/StudyActivitiesPage';
+import { MemoryNotesPage } from './pages/study/MemoryNotesPage';
+import { FlashcardsPage } from './pages/study/FlashcardsPage';
+import { QuizPage } from './pages/study/QuizPage';
+import { ConceptMapPage } from './pages/study/ConceptMapPage';
+import { AIFeedbackPage } from './pages/study/AIFeedbackPage';
+
 // Protected Route component
 import { ProtectedRoute } from './components/auth/ProtectedRoute';
 
@@ -43,6 +54,7 @@ import 'react-toastify/dist/ReactToastify.css';
 
 function App() {
   const initializeAuth = useAuthStore(state => state.initializeAuth);
+  const [isSearchModalOpen, setIsSearchModalOpen] = useState(false);
 
   useEffect(() => {
     // Initialize security measures
@@ -51,6 +63,20 @@ function App() {
     // Initialize authentication state from Supabase session
     initializeAuth();
   }, [initializeAuth]);
+
+  // Global keyboard shortcuts
+  useEffect(() => {
+    const handleKeyDown = (e: KeyboardEvent) => {
+      // Cmd/Ctrl + K for global search
+      if ((e.metaKey || e.ctrlKey) && e.key === 'k') {
+        e.preventDefault();
+        setIsSearchModalOpen(true);
+      }
+    };
+
+    document.addEventListener('keydown', handleKeyDown);
+    return () => document.removeEventListener('keydown', handleKeyDown);
+  }, []);
 
   return (
     <QueryClientProvider client={queryClient}>
@@ -96,6 +122,14 @@ function App() {
               {/* Settings route */}
               <Route path="settings" element={<SettingsPage />} />
 
+              {/* Study activity routes */}
+              <Route path="study" element={<StudyActivitiesPage />} />
+              <Route path="study/memory-notes" element={<MemoryNotesPage />} />
+              <Route path="study/flashcards" element={<FlashcardsPage />} />
+              <Route path="study/quiz" element={<QuizPage />} />
+              <Route path="study/concept-map" element={<ConceptMapPage />} />
+              <Route path="study/ai-feedback" element={<AIFeedbackPage />} />
+
               {/* Profile routes */}
               <Route path="profile" element={<ProfilePage />} />
             </Route>
@@ -122,6 +156,12 @@ function App() {
 
       {/* React Query DevTools */}
       <ReactQueryDevtools initialIsOpen={false} />
+
+      {/* Global Search Modal */}
+      <GlobalSearchModal
+        isOpen={isSearchModalOpen}
+        onClose={() => setIsSearchModalOpen(false)}
+      />
     </QueryClientProvider>
   );
 }

@@ -1,4 +1,5 @@
 import React, { useState, useEffect } from 'react';
+import { Link } from 'react-router-dom';
 import {
   MagnifyingGlassIcon,
   AdjustmentsHorizontalIcon,
@@ -127,7 +128,11 @@ export const SearchPage: React.FC = () => {
         {/* 검색 모드 선택 탭 */}
         <div className="flex space-x-1 mb-6">
           <button
-            onClick={() => setSearchMode('traditional')}
+            onClick={() => {
+              setSearchMode('traditional');
+              setSemanticResults([]);
+              setSearchQuery('');
+            }}
             className={`flex items-center px-4 py-2 rounded-lg font-medium transition-colors ${
               searchMode === 'traditional'
                 ? 'bg-blue-100 text-blue-700 border border-blue-300'
@@ -138,7 +143,11 @@ export const SearchPage: React.FC = () => {
             키워드 검색
           </button>
           <button
-            onClick={() => setSearchMode('semantic')}
+            onClick={() => {
+              setSearchMode('semantic');
+              clearResults();
+              setSearchQuery('');
+            }}
             className={`flex items-center px-4 py-2 rounded-lg font-medium transition-colors ${
               searchMode === 'semantic'
                 ? 'bg-purple-100 text-purple-700 border border-purple-300'
@@ -393,11 +402,17 @@ export const SearchPage: React.FC = () => {
         {(searchMode === 'traditional' ? results.length > 0 : semanticResults.length > 0) && (
           <div className="flex justify-between items-center text-sm text-gray-600">
             <span>
-              총 {totalCount.toLocaleString()}개의 결과 ({searchTime}ms)
+              {searchMode === 'semantic' ? (
+                `${semanticResults.length}개의 AI 의미 검색 결과`
+              ) : (
+                `총 ${totalCount.toLocaleString()}개의 결과 (${searchTime}ms)`
+              )}
             </span>
-            <span>
-              페이지 {currentPage} / {totalPages}
-            </span>
+            {searchMode === 'traditional' && (
+              <span>
+                페이지 {currentPage} / {totalPages}
+              </span>
+            )}
           </div>
         )}
 
@@ -409,9 +424,9 @@ export const SearchPage: React.FC = () => {
                 <div className="flex items-start justify-between">
                   <div className="flex-1">
                     <h3 className="text-xl font-semibold text-gray-900 mb-2">
-                      <a href={`/app/knowledge/${result.id}`} className="hover:text-purple-600">
+                      <Link to={`/app/knowledge/${result.id}`} className="hover:text-purple-600">
                         {result.title}
-                      </a>
+                      </Link>
                     </h3>
                     <p className="text-gray-600 mb-3 line-clamp-3">
                       {result.content}
@@ -479,9 +494,9 @@ export const SearchPage: React.FC = () => {
             {results.map((result) => (
               <div key={result.id} className="bg-white p-6 rounded-lg shadow hover:shadow-md transition-shadow">
                 <h3 className="text-xl font-semibold text-gray-900 mb-2">
-                  <a href={`/app/knowledge/${result.id}`} className="hover:text-primary-600">
+                  <Link to={`/app/knowledge/${result.id}`} className="hover:text-primary-600">
                     {result.title}
-                  </a>
+                  </Link>
                 </h3>
                 <p className="text-gray-600 mb-3">
                   {result.content}
@@ -537,12 +552,20 @@ export const SearchPage: React.FC = () => {
               </div>
             ))}
           </div>
-        ) : searchQuery ? (
+        ) : (searchMode === 'traditional' && searchQuery) ? (
           <div className="text-center py-12">
             <MagnifyingGlassIcon className="mx-auto h-12 w-12 text-gray-400" />
             <h3 className="mt-2 text-sm font-medium text-gray-900">검색 결과 없음</h3>
             <p className="mt-1 text-sm text-gray-500">
               '{searchQuery}'에 대한 검색 결과를 찾을 수 없습니다.
+            </p>
+          </div>
+        ) : (searchMode === 'semantic' && semanticResults.length === 0 && !isSearching) ? (
+          <div className="text-center py-12">
+            <SparklesIcon className="mx-auto h-12 w-12 text-purple-400" />
+            <h3 className="mt-2 text-sm font-medium text-gray-900">AI 의미 검색</h3>
+            <p className="mt-1 text-sm text-gray-500">
+              자연어 질문으로 관련 지식을 찾아보세요.
             </p>
           </div>
         ) : (

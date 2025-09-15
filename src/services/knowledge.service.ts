@@ -1,11 +1,11 @@
 import { supabase } from '../lib/supabase'
 import type { Database } from '../lib/supabase'
 
-type KnowledgeNode = Database['public']['Tables']['knowledge_nodes']['Row']
-type InsertKnowledgeNode = Database['public']['Tables']['knowledge_nodes']['Insert']
-type UpdateKnowledgeNode = Database['public']['Tables']['knowledge_nodes']['Update']
-type KnowledgeRelationship = Database['public']['Tables']['knowledge_relationships']['Row']
-type InsertKnowledgeRelationship = Database['public']['Tables']['knowledge_relationships']['Insert']
+export type KnowledgeNode = Database['public']['Tables']['knowledge_nodes']['Row']
+export type InsertKnowledgeNode = Database['public']['Tables']['knowledge_nodes']['Insert']
+export type UpdateKnowledgeNode = Database['public']['Tables']['knowledge_nodes']['Update']
+export type KnowledgeRelationship = Database['public']['Tables']['knowledge_relationships']['Row']
+export type InsertKnowledgeRelationship = Database['public']['Tables']['knowledge_relationships']['Insert']
 
 export class KnowledgeService {
   // Knowledge Nodes CRUD

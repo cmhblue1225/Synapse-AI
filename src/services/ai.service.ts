@@ -674,6 +674,53 @@ JSON 형식으로 응답해주세요:
       throw error;
     }
   }
+
+  // 범용 AI 응답 생성 메서드
+  async generateResponse(prompt: string, options?: {
+    model?: string;
+    maxTokens?: number;
+    temperature?: number;
+    systemMessage?: string;
+  }): Promise<string> {
+    try {
+      const {
+        model = 'gpt-4o-mini',
+        maxTokens = 2000,
+        temperature = 0.7,
+        systemMessage = '도움이 되는 AI 어시스턴트입니다. JSON 응답을 요청받으면 코드 블록(```) 없이 순수 JSON만 반환합니다.'
+      } = options || {};
+
+      console.log('🤖 AI 응답 생성 요청:', { model, maxTokens, temperature });
+
+      const completion = await openai.chat.completions.create({
+        model,
+        messages: [
+          {
+            role: 'system',
+            content: systemMessage
+          },
+          {
+            role: 'user',
+            content: prompt
+          }
+        ],
+        max_tokens: maxTokens,
+        temperature
+      });
+
+      const response = completion.choices[0]?.message?.content;
+      if (!response) {
+        throw new Error('AI 응답을 생성할 수 없습니다.');
+      }
+
+      console.log('✅ AI 응답 생성 완료');
+      return response;
+
+    } catch (error) {
+      console.error('❌ AI 응답 생성 실패:', error);
+      throw new Error('AI 응답 생성 중 오류가 발생했습니다: ' + (error instanceof Error ? error.message : 'Unknown error'));
+    }
+  }
 }
 
 export const aiService = new AIService()
