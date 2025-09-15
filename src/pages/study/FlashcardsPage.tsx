@@ -4,6 +4,7 @@ import { ArrowLeftIcon, ArrowPathIcon, CheckIcon, XMarkIcon, EyeIcon, EyeSlashIc
 import { FireIcon, AcademicCapIcon, ClockIcon, TrophyIcon } from '@heroicons/react/24/solid';
 import { studyService, type Flashcard } from '../../services/study.service';
 import { knowledgeService, type KnowledgeNode } from '../../services/knowledge.service';
+import { aiService } from '../../services/ai.service';
 
 interface FlashcardDisplay extends Flashcard {
   isFlipped: boolean;
@@ -97,23 +98,17 @@ export const FlashcardsPage: React.FC = () => {
       setSessionId(session.id);
 
       // Generate flashcards using AI
+      console.log('🤖 AI 플래시카드 생성 시작...');
       const generatedCards = await generateFlashcardsWithAI(selectedNodes, session.id);
 
-      // Save to database
-      await studyService.createFlashcards(generatedCards);
+      // Save to database and get actual IDs
+      console.log('💾 데이터베이스에 플래시카드 저장 중...');
+      const savedCards = await studyService.createFlashcards(generatedCards);
+      console.log('✅ 플래시카드 저장 완료:', savedCards.length, '개');
 
-      // Load as display cards
-      setFlashcards(generatedCards.map(card => ({
+      // Load as display cards with real database IDs
+      setFlashcards(savedCards.map(card => ({
         ...card,
-        id: crypto.randomUUID(),
-        review_count: 0,
-        correct_count: 0,
-        last_reviewed_at: undefined,
-        next_review_at: undefined,
-        ease_factor: 2.5,
-        interval_days: 1,
-        created_at: new Date().toISOString(),
-        updated_at: new Date().toISOString(),
         isFlipped: false,
         showAnswer: false
       })));
@@ -160,50 +155,116 @@ export const FlashcardsPage: React.FC = () => {
   };
 
   const generateSingleFlashcard = async (node: KnowledgeNode, cardType: string, sessionId: string) => {
-    // AI-based card generation logic
-    const content = node.content || '';
-    const title = node.title;
+    try {
+      console.log(`🤖 AI 플래시카드 생성: ${node.title} (${cardType})`);
 
-    // Generate question and answer based on card type
-    let question = '';
-    let answer = '';
-    let difficulty: 'easy' | 'medium' | 'hard' = 'medium';
+      // 카드 타입별 프롬프트 생성
+      let cardPrompt = '';
+      let difficulty: 'easy' | 'medium' | 'hard' = 'medium';
 
-    switch (cardType) {
-      case 'definition':
-        question = `${title}에서 핵심 개념을 정의하시오.`;
-        answer = content.substring(0, 200) + '...';
-        difficulty = 'easy';
-        break;
-      case 'concept':
-        question = `${title}의 주요 특징은 무엇인가요?`;
-        answer = `${title}의 주요 특징: ${content.substring(0, 150)}...`;
-        difficulty = 'medium';
-        break;
-      case 'example':
-        question = `${title}의 실제 적용 사례를 설명하시오.`;
-        answer = `실제 적용: ${content.substring(100, 250)}...`;
-        difficulty = 'medium';
-        break;
-      case 'application':
-        question = `${title}를 어떻게 활용할 수 있나요?`;
-        answer = `활용 방법: ${content.substring(50, 200)}...`;
-        difficulty = 'hard';
-        break;
+      switch (cardType) {
+        case 'definition':
+          cardPrompt = `"${node.title}"에서 핵심 개념이나 용어의 정의를 묻는 플래시카드를 만들어주세요.`;
+          difficulty = 'easy';
+          break;
+        case 'concept':
+          cardPrompt = `"${node.title}"의 주요 개념이나 특징을 설명하는 플래시카드를 만들어주세요.`;
+          difficulty = 'medium';
+          break;
+        case 'example':
+          cardPrompt = `"${node.title}"의 실제 적용 사례나 예시를 묻는 플래시카드를 만들어주세요.`;
+          difficulty = 'medium';
+          break;
+        case 'application':
+          cardPrompt = `"${node.title}"의 활용 방법이나 응용을 묻는 플래시카드를 만들어주세요.`;
+          difficulty = 'hard';
+          break;
+      }
+
+      const prompt = `다음 지식 내용을 바탕으로 학습용 플래시카드 1개를 생성해주세요.
+
+**제목:** ${node.title}
+**내용:**
+${(node.content || '').substring(0, 1000)}
+
+**요청사항:** ${cardPrompt}
+
+다음 JSON 형식으로 응답해주세요:
+{
+  "question": "앞면 질문 (명확하고 구체적으로)",
+  "answer": "뒷면 답변 (정확하고 간결하게, HTML 태그 없이 일반 텍스트만)"
+}
+
+**중요 규칙:**
+1. 질문은 명확하고 이해하기 쉽게 작성
+2. 답변은 HTML 태그 없이 일반 텍스트만 사용
+3. 답변은 200자 이내로 간결하게 작성
+4. 실제 내용을 바탕으로 정확한 답변 생성
+
+**중요: JSON 형식만 반환해주세요.**`;
+
+      const aiResponse = await aiService.generateResponse(prompt, {
+        temperature: 0.6,
+        maxTokens: 400
+      });
+
+      // AI 응답 파싱
+      let cardData;
+      try {
+        let cleanResponse = aiResponse.trim();
+        if (cleanResponse.startsWith('```json')) {
+          cleanResponse = cleanResponse.replace(/```json\s*/, '').replace(/```\s*$/, '');
+        } else if (cleanResponse.startsWith('```')) {
+          cleanResponse = cleanResponse.replace(/```\s*/, '').replace(/```\s*$/, '');
+        }
+
+        cardData = JSON.parse(cleanResponse);
+
+      } catch (parseError) {
+        console.error('AI 플래시카드 파싱 실패:', parseError);
+        // 파싱 실패 시 기본 카드 생성
+        cardData = {
+          question: `${node.title}에 대해 설명하시오.`,
+          answer: (node.content || '').replace(/<[^>]*>/g, '').substring(0, 200) + '...'
+        };
+      }
+
+      // HTML 태그 제거 (혹시 모를 경우 대비)
+      const cleanAnswer = (cardData.answer || '').replace(/<[^>]*>/g, '').trim();
+
+      console.log(`✅ AI 플래시카드 생성 완료: ${cardData.question}`);
+
+      return {
+        session_id: sessionId,
+        question: cardData.question || `${node.title}에 대해 설명하시오.`,
+        answer: cleanAnswer || '답변을 생성할 수 없습니다.',
+        difficulty,
+        category: node.node_type || 'Knowledge',
+        tags: node.tags || [],
+        review_count: 0,
+        correct_count: 0,
+        ease_factor: 2.5,
+        interval_days: 1
+      };
+
+    } catch (error) {
+      console.error('AI 플래시카드 생성 실패:', error);
+
+      // 오류 시 안전한 기본 카드 생성
+      const cleanContent = (node.content || '').replace(/<[^>]*>/g, '').trim();
+      return {
+        session_id: sessionId,
+        question: `${node.title}에 대해 설명하시오.`,
+        answer: cleanContent.substring(0, 200) + (cleanContent.length > 200 ? '...' : ''),
+        difficulty: 'medium' as const,
+        category: node.node_type || 'Knowledge',
+        tags: node.tags || [],
+        review_count: 0,
+        correct_count: 0,
+        ease_factor: 2.5,
+        interval_days: 1
+      };
     }
-
-    return {
-      session_id: sessionId,
-      question,
-      answer,
-      difficulty,
-      category: node.node_type,
-      tags: node.tags || [],
-      review_count: 0,
-      correct_count: 0,
-      ease_factor: 2.5,
-      interval_days: 1
-    };
   };
 
   const handleAnswer = async (isCorrect: boolean) => {
@@ -215,7 +276,11 @@ export const FlashcardsPage: React.FC = () => {
     try {
       // Update flashcard using spaced repetition
       if (currentCard.id) {
+        console.log(`📝 플래시카드 업데이트 시도: ID=${currentCard.id}, Quality=${quality}`);
         await studyService.reviewFlashcard(currentCard.id, quality);
+        console.log('✅ 플래시카드 업데이트 성공');
+      } else {
+        console.warn('⚠️ 플래시카드 ID가 없음:', currentCard);
       }
 
       // Update stats
@@ -240,7 +305,9 @@ export const FlashcardsPage: React.FC = () => {
         }
       }
     } catch (error) {
-      console.error('Failed to update flashcard:', error);
+      console.error('❌ 플래시카드 업데이트 실패:', error);
+      console.error('현재 카드 정보:', currentCard);
+      // 에러가 발생해도 진행은 계속
     }
   };
 
