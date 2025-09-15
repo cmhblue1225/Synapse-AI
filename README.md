@@ -1,6 +1,11 @@
 # Synapse AI - 지능형 지식 관리 시스템 🧠
 
+[![Live Demo](https://img.shields.io/badge/🚀_Live_Demo-synapse--doc.netlify.app-green?style=for-the-badge)](https://synapse-doc.netlify.app)
+[![Deploy Status](https://api.netlify.com/api/v1/badges/synapse-doc/deploy-status)](https://app.netlify.com/sites/synapse-doc/deploys)
+
 개인 지식을 구조화하고 관리하는 차세대 AI 기반 지식 관리 시스템입니다. PDF 자동 처리부터 AI 요약까지, 완전히 자동화된 지식 관리 경험을 제공합니다.
+
+**🌐 [라이브 데모 체험하기](https://synapse-doc.netlify.app)** - 지금 바로 사용해보세요!
 
 ## ✨ 핵심 혁신 기능
 
@@ -82,20 +87,41 @@ npm run dev
 
 애플리케이션이 `http://localhost:5173`에서 실행됩니다.
 
-## 📦 배포
+## 🚀 프로덕션 배포
 
-### Render.com 배포
+### ✅ 현재 배포 상태
+- **플랫폼**: Netlify
+- **URL**: https://synapse-doc.netlify.app
+- **상태**: 🟢 온라인
+- **자동 배포**: GitHub 연동 완료
 
-1. GitHub에 코드를 푸시합니다
-2. Render.com에서 새 Static Site를 생성합니다
-3. 빌드 명령어: `npm ci && npm run build`
-4. 게시 디렉토리: `dist`
-5. 환경 변수를 설정합니다:
-   - `VITE_SUPABASE_URL`
-   - `VITE_SUPABASE_ANON_KEY`
-   - `VITE_OPENAI_API_KEY`
+### Netlify 배포 설정
 
-### 빌드 명령어
+시스템은 최적화된 `netlify.toml` 설정으로 자동 배포됩니다:
+
+```toml
+[build]
+  command = "npm ci --legacy-peer-deps && npm run build"
+  publish = "dist"
+
+[build.environment]
+  NODE_VERSION = "20"
+  NPM_FLAGS = "--legacy-peer-deps"
+
+[[redirects]]
+  from = "/*"
+  to = "/index.html"
+  status = 200
+```
+
+### 환경 변수 설정
+
+Netlify 대시보드에서 다음 환경 변수 설정 필요:
+- `VITE_SUPABASE_URL` - Supabase 프로젝트 URL
+- `VITE_SUPABASE_ANON_KEY` - Supabase 익명 키
+- `VITE_OPENAI_API_KEY` - OpenAI API 키
+
+### 로컬 빌드 명령어
 
 ```bash
 # 프로덕션 빌드
@@ -103,6 +129,9 @@ npm run build
 
 # 빌드 미리보기
 npm run preview
+
+# 빌드 분석
+npm run build -- --analyze
 ```
 
 ## 📋 주요 페이지
