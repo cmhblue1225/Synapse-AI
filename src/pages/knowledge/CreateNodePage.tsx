@@ -22,7 +22,7 @@ interface CreateNodeForm {
 export const CreateNodePage: React.FC = () => {
   const navigate = useNavigate();
   const [isSubmitting, setIsSubmitting] = useState(false);
-  const [showAITools] = useState(false);
+  const [showAITools, setShowAITools] = useState(false);
   const [createdNodeId, setCreatedNodeId] = useState<string | null>(null);
   const [tagsInput, setTagsInput] = useState('');
   const [aiData, setAiData] = useState<{ summary?: string; tags?: string[] }>({});
