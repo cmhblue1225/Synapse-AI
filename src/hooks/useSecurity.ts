@@ -60,7 +60,7 @@ export const useSecurity = () => {
 
       for (const tag of data.tags) {
         if (!validator.isValidTag(tag)) {
-          errors.push(`'${tag}'는 유효하지 않은 태그입니다. 영문, 숫자, 한글, 공백, _, -만 사용 가능하며 50자 이하여야 합니다.`);
+          errors.push(`'${tag}'는 유효하지 않은 태그입니다. 영문, 숫자, 한글, 공백, 점(.), _, -만 사용 가능하며 50자 이하여야 합니다.`);
         }
       }
     }

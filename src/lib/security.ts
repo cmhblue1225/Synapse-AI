@@ -97,9 +97,9 @@ export const validator = {
     return text.length >= min && text.length <= max;
   },
 
-  // 태그 형식 검증 (공백 허용)
+  // 태그 형식 검증 (공백, 점 허용)
   isValidTag: (tag: string): boolean => {
-    return /^[a-zA-Z0-9가-힣\s_-]{1,50}$/.test(tag) && tag.trim().length > 0;
+    return /^[a-zA-Z0-9가-힣\s._-]{1,50}$/.test(tag) && tag.trim().length > 0;
   },
 
   // 노드 타입 검증 (UI에서 사용하는 타입들 포함)
