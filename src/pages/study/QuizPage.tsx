@@ -663,8 +663,7 @@ export const QuizPage: React.FC = () => {
                   </button>
                 );
               })}
-              </div>
-            )}
+            </div>
           </div>
 
           {/* Explanation (shown after answer) */}
