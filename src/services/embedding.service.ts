@@ -391,29 +391,60 @@ export class EmbeddingService {
     } = {}
   ): Promise<SemanticSearchResult[]> {
     try {
-      // 대상 노드의 임베딩 조회
-      const { data: targetNode, error: targetError } = await supabase
-        .from('knowledge_nodes')
-        .select('embedding, title')
-        .eq('id', nodeId)
-        .eq('is_active', true)
-        .not('embedding', 'is', null)
-        .single();
+      console.log('🔍 유사 노드 검색 시작:', nodeId);
 
-      if (targetError || !targetNode) {
-        throw new Error(`대상 노드 조회 실패: ${targetError?.message || '노드를 찾을 수 없음'}`);
+      // embedding 필드가 있는지 먼저 확인
+      let hasEmbeddingField = true;
+      let targetNodeWithEmbedding = null;
+
+      try {
+        const { data: embeddingCheck, error: embeddingError } = await supabase
+          .from('knowledge_nodes')
+          .select('id, title, content, embedding')
+          .eq('id', nodeId)
+          .eq('is_active', true)
+          .single();
+
+        if (embeddingError || !embeddingCheck || !embeddingCheck.embedding) {
+          hasEmbeddingField = false;
+        } else {
+          targetNodeWithEmbedding = embeddingCheck;
+        }
+      } catch (error) {
+        console.warn('⚠️ embedding 필드 접근 불가, 콘텐츠 기반 검색으로 전환');
+        hasEmbeddingField = false;
       }
 
+      // embedding이 없으면 기본 필드만으로 조회
+      if (!hasEmbeddingField || !targetNodeWithEmbedding) {
+        const { data: targetNode, error: targetError } = await supabase
+          .from('knowledge_nodes')
+          .select('id, title, content')
+          .eq('id', nodeId)
+          .eq('is_active', true)
+          .single();
+
+        if (targetError || !targetNode) {
+          console.error('❌ 대상 노드 조회 실패:', targetError);
+          throw new Error(`대상 노드 조회 실패: ${targetError?.message || '노드를 찾을 수 없음'}`);
+        }
+
+        console.log('✅ 대상 노드 조회 성공 (콘텐츠 기반):', targetNode.title);
+        return this.performContentBasedSearch(targetNode, options);
+      }
+
+      console.log('✅ 대상 노드 조회 성공 (임베딩 기반):', targetNodeWithEmbedding.title);
+
       // 대상 노드 임베딩 파싱
-      const targetEmbedding = typeof targetNode.embedding === 'string'
-        ? JSON.parse(targetNode.embedding)
-        : targetNode.embedding;
+      const targetEmbedding = typeof targetNodeWithEmbedding.embedding === 'string'
+        ? JSON.parse(targetNodeWithEmbedding.embedding)
+        : targetNodeWithEmbedding.embedding;
 
       if (!Array.isArray(targetEmbedding)) {
         throw new Error('대상 노드의 임베딩 형식이 올바르지 않습니다');
       }
 
-      console.log(`🔍 "${targetNode.title}" 노드와 유사한 노드 검색 중...`);
+      console.log(`🔍 "${targetNodeWithEmbedding.title}" 노드와 유사한 노드 검색 중...`);
 
       // 모든 활성 노드 조회
       const { data: nodes, error } = await supabase
@@ -621,6 +652,93 @@ export class EmbeddingService {
       console.error('임베딩 품질 분석 오류:', error);
       throw error;
     }
+  }
+
+  // embedding 필드가 없을 때 사용할 콘텐츠 기반 검색
+  private async performContentBasedSearch(
+    targetNode: { id: string; title: string; content: string },
+    options: { limit?: number; similarity_threshold?: number; exclude_self?: boolean } = {}
+  ): Promise<SemanticSearchResult[]> {
+    try {
+      console.log('📝 콘텐츠 기반 유사도 검색 수행');
+
+      const { limit = 5 } = options;
+
+      // 다른 노드들 조회
+      const { data: otherNodes, error } = await supabase
+        .from('knowledge_nodes')
+        .select('id, title, content, node_type, tags, created_at, updated_at')
+        .eq('is_active', true)
+        .neq('id', targetNode.id)
+        .limit(50); // 최대 50개 중에서 검색
+
+      if (error) {
+        console.error('❌ 다른 노드 조회 실패:', error);
+        return [];
+      }
+
+      if (!otherNodes || otherNodes.length === 0) {
+        console.log('📭 비교할 다른 노드가 없습니다');
+        return [];
+      }
+
+      // 단순 텍스트 유사도 계산 (키워드 기반)
+      const targetWords = this.extractKeywords(targetNode.title + ' ' + (targetNode.content || ''));
+
+      const similarityResults = otherNodes.map(node => {
+        const nodeWords = this.extractKeywords(node.title + ' ' + (node.content || ''));
+        const similarity = this.calculateTextSimilarity(targetWords, nodeWords);
+
+        return {
+          id: node.id,
+          title: node.title,
+          content: node.content || '',
+          node_type: node.node_type || 'Knowledge',
+          tags: node.tags || [],
+          created_at: node.created_at,
+          updated_at: node.updated_at,
+          similarity
+        };
+      });
+
+      // 유사도 순으로 정렬 후 상위 결과 반환
+      const sortedResults = similarityResults
+        .filter(result => result.similarity > 0.1) // 최소 유사도 필터
+        .sort((a, b) => b.similarity - a.similarity)
+        .slice(0, limit);
+
+      console.log(`✅ 콘텐츠 기반 검색 완료: ${sortedResults.length}개 결과`);
+      return sortedResults;
+
+    } catch (error) {
+      console.error('❌ 콘텐츠 기반 검색 실패:', error);
+      return [];
+    }
+  }
+
+  // 키워드 추출 (간단한 구현)
+  private extractKeywords(text: string): string[] {
+    if (!text) return [];
+
+    return text
+      .toLowerCase()
+      .replace(/[^가-힣a-z0-9\s]/g, ' ')
+      .split(/\s+/)
+      .filter(word => word.length > 1)
+      .slice(0, 50); // 최대 50개 키워드
+  }
+
+  // 텍스트 유사도 계산 (자카드 유사도 기반)
+  private calculateTextSimilarity(words1: string[], words2: string[]): number {
+    if (words1.length === 0 || words2.length === 0) return 0;
+
+    const set1 = new Set(words1);
+    const set2 = new Set(words2);
+
+    const intersection = new Set([...set1].filter(x => set2.has(x)));
+    const union = new Set([...set1, ...set2]);
+
+    return intersection.size / union.size;
   }
 }
 
