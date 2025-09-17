@@ -10,6 +10,7 @@ import { QuizSettingsModal } from '../../components/QuizSettingsModal';
 interface QuizQuestionUI {
   id: string;
   question: string;
+  question_type: 'multiple_choice' | 'true_false';
   options: string[];
   correctAnswer: number;
   explanation: string;
@@ -165,6 +166,7 @@ export const QuizPage: React.FC = () => {
       const uiQuestions: QuizQuestionUI[] = savedQuestions.map((dbQ, index) => ({
         id: dbQ.id,
         question: dbQ.question,
+        question_type: dbQ.question_type,
         options: dbQ.options || [],
         correctAnswer: dbQ.options?.indexOf(dbQ.correct_answer) || 0,
         explanation: dbQ.explanation || '',
@@ -200,12 +202,15 @@ export const QuizPage: React.FC = () => {
   const saveQuizResult = async (questionIndex: number, isCorrect: boolean, timeTaken: number) => {
     if (!sessionId || !dbQuestions[questionIndex]) return;
 
+    const currentQuestion = quizState.questions[questionIndex];
+    const userAnswer = quizState.selectedAnswer !== null ?
+      currentQuestion.options[quizState.selectedAnswer] : undefined;
+
     try {
       await studyService.createQuizResults([{
         session_id: sessionId,
         question_id: dbQuestions[questionIndex].id,
-        user_answer: quizState.selectedAnswer !== null ?
-          quizState.questions[questionIndex].options[quizState.selectedAnswer] : undefined,
+        user_answer: userAnswer,
         is_correct: isCorrect,
         time_taken: Math.round(timeTaken),
         points_earned: isCorrect ? dbQuestions[questionIndex].points : 0
@@ -234,6 +239,7 @@ export const QuizPage: React.FC = () => {
       }));
     }
   };
+
 
   const handleSubmitAnswer = async () => {
     const currentQuestion = quizState.questions[quizState.currentQuestionIndex];
@@ -408,8 +414,48 @@ export const QuizPage: React.FC = () => {
         </div>
       </div>
 
-      {/* Main Content */}
-      {quizState.questions.length === 0 && !isGenerating ? (
+      {/* 퀴즈 생성 중 로딩 UI */}
+      {isGenerating ? (
+        <div className="flex items-center justify-center min-h-screen">
+          <div className="text-center max-w-md mx-auto p-8">
+            <div className="mb-6">
+              <ArrowPathIcon className="mx-auto h-16 w-16 animate-spin text-purple-600" />
+            </div>
+            <h3 className="text-2xl font-bold text-gray-900 mb-4">퀴즈 생성 중...</h3>
+            <p className="text-gray-600 mb-6">
+              AI가 선택한 지식 노드를 분석하여 맞춤형 퀴즈를 생성하고 있습니다.
+            </p>
+
+            <div className="space-y-3 text-sm text-gray-500">
+              <div className="flex items-center justify-center space-x-2">
+                <div className="w-2 h-2 bg-purple-600 rounded-full animate-pulse"></div>
+                <span>문서 내용 분석 중...</span>
+              </div>
+              {selectedNodes.some(node => node.metadata?.attachments?.length > 0) && (
+                <div className="flex items-center justify-center space-x-2">
+                  <div className="w-2 h-2 bg-green-600 rounded-full animate-pulse animation-delay-100"></div>
+                  <span>첨부파일 내용 추출 중...</span>
+                </div>
+              )}
+              <div className="flex items-center justify-center space-x-2">
+                <div className="w-2 h-2 bg-purple-600 rounded-full animate-pulse animation-delay-200"></div>
+                <span>문제 난이도 조정 중...</span>
+              </div>
+              <div className="flex items-center justify-center space-x-2">
+                <div className="w-2 h-2 bg-purple-600 rounded-full animate-pulse animation-delay-400"></div>
+                <span>최적의 문제 선별 중...</span>
+              </div>
+            </div>
+
+            <div className="mt-8">
+              <div className="w-full bg-gray-200 rounded-full h-2">
+                <div className="bg-purple-600 h-2 rounded-full transition-all duration-1000 animate-pulse" style={{width: '60%'}}></div>
+              </div>
+              <p className="text-xs text-gray-500 mt-2">잠시만 기다려주세요...</p>
+            </div>
+          </div>
+        </div>
+      ) : quizState.questions.length === 0 ? (
         <div className="text-center py-12">
           <QuestionMarkCircleIcon className="mx-auto h-12 w-12 text-gray-400 mb-4" />
           <h3 className="text-lg font-medium text-gray-900 mb-2">AI 퀴즈 생성</h3>
@@ -417,13 +463,27 @@ export const QuizPage: React.FC = () => {
 
           {selectedNodes.length > 0 && (
             <div className="mb-6">
-              <h4 className="text-sm font-medium text-gray-700 mb-2">선택된 노드 ({selectedNodes.length}개)</h4>
+              <h4 className="text-sm font-medium text-gray-700 mb-2">
+                선택된 노드 ({selectedNodes.length}개)
+                {selectedNodes.some(node => node.metadata?.attachments?.length > 0) && (
+                  <span className="ml-2 text-xs text-green-600">
+                    📎 첨부파일 포함
+                  </span>
+                )}
+              </h4>
               <div className="flex flex-wrap gap-2 justify-center">
                 {selectedNodes.map(node => (
                   <span
                     key={node.id}
-                    className="inline-flex items-center px-3 py-1 rounded-full text-sm bg-blue-100 text-blue-800"
+                    className={`inline-flex items-center px-3 py-1 rounded-full text-sm ${
+                      node.metadata?.attachments?.length > 0
+                        ? 'bg-green-100 text-green-800 border border-green-200'
+                        : 'bg-blue-100 text-blue-800'
+                    }`}
                   >
+                    {node.metadata?.attachments?.length > 0 && (
+                      <span className="mr-1">📎</span>
+                    )}
                     {node.title}
                   </span>
                 ))}
@@ -603,7 +663,8 @@ export const QuizPage: React.FC = () => {
                   </button>
                 );
               })}
-            </div>
+              </div>
+            )}
           </div>
 
           {/* Explanation (shown after answer) */}

@@ -197,8 +197,7 @@ export const QuizSettingsModal: React.FC<QuizSettingsModalProps> = ({
             <div className="space-y-2">
               {[
                 { id: 'multiple_choice', label: '객관식 (4지선다)', description: '선택지 중 정답을 고르는 문제' },
-                { id: 'true_false', label: '참/거짓', description: '참 또는 거짓을 판단하는 문제' },
-                { id: 'short_answer', label: '단답형', description: '간단한 답을 직접 입력하는 문제' }
+                { id: 'true_false', label: '참/거짓', description: '참 또는 거짓을 판단하는 문제' }
               ].map(type => (
                 <label key={type.id} className="flex items-start space-x-3 p-3 border rounded-lg cursor-pointer hover:bg-gray-50">
                   <input
