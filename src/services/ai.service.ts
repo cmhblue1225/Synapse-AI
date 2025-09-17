@@ -912,8 +912,9 @@ JSON 형식으로 답변해 주세요 (JSON 코드 블록 없이 순수 JSON만)
 
     try {
       const response = await this.generateResponse(prompt, {
-        temperature: 0.7,
-        maxTokens: 600
+        temperature: 0.5, // 더 일관된 응답을 위해 낮춤
+        maxTokens: 500,   // 객관식은 더 많은 토큰 필요 (선택지 때문에)
+        systemMessage: '당신은 JSON 형식의 퀴즈 문제를 생성하는 전문가입니다. 반드시 유효한 JSON 형식으로만 응답하며, 추가 설명이나 마크다운 없이 순수한 JSON 객체만 반환합니다.'
       });
 
       // JSON 코드 블록 제거 및 정리 (더 강력한 정리)
@@ -932,8 +933,38 @@ JSON 형식으로 답변해 주세요 (JSON 코드 블록 없이 순수 JSON만)
         cleanResponse = cleanResponse.substring(jsonStart, jsonEnd + 1);
       }
 
+      console.log('🔍 객관식 원본 응답:', response);
       console.log('🔍 객관식 정리된 JSON 응답:', cleanResponse);
-      const parsed = JSON.parse(cleanResponse);
+
+      // JSON 검증 및 파싱
+      let parsed;
+      try {
+        parsed = JSON.parse(cleanResponse);
+      } catch (parseError) {
+        console.error('JSON 파싱 실패, 대체 로직 시도:', parseError);
+
+        // 대체 방법: 정규식으로 필요한 값들 추출
+        const questionMatch = cleanResponse.match(/"question"\s*:\s*"([^"]+)"/);
+        const optionsMatch = cleanResponse.match(/"options"\s*:\s*\[([^\]]+)\]/);
+        const correctAnswerMatch = cleanResponse.match(/"correct_answer"\s*:\s*"([^"]+)"/);
+        const explanationMatch = cleanResponse.match(/"explanation"\s*:\s*"([^"]+)"/);
+
+        if (questionMatch && optionsMatch && correctAnswerMatch && explanationMatch) {
+          // options 배열 파싱
+          const optionsString = optionsMatch[1];
+          const options = optionsString.split(',').map(opt => opt.trim().replace(/"/g, ''));
+
+          parsed = {
+            question: questionMatch[1],
+            options: options,
+            correct_answer: correctAnswerMatch[1],
+            explanation: explanationMatch[1]
+          };
+          console.log('✅ 정규식으로 JSON 파싱 성공:', parsed);
+        } else {
+          throw new Error('JSON 파싱 및 정규식 추출 모두 실패');
+        }
+      }
       return {
         question: parsed.question,
         question_type: 'multiple_choice',
@@ -981,8 +1012,9 @@ JSON 형식으로 답변해 주세요 (JSON 코드 블록 없이 순수 JSON만)
 
     try {
       const response = await this.generateResponse(prompt, {
-        temperature: 0.7,
-        maxTokens: 400
+        temperature: 0.5, // 더 일관된 응답을 위해 낮춤
+        maxTokens: 300,   // 더 간결한 응답
+        systemMessage: '당신은 JSON 형식의 퀴즈 문제를 생성하는 전문가입니다. 반드시 유효한 JSON 형식으로만 응답하며, 추가 설명이나 마크다운 없이 순수한 JSON 객체만 반환합니다.'
       });
 
       // JSON 코드 블록 제거 및 정리 (더 강력한 정리)
@@ -1001,8 +1033,32 @@ JSON 형식으로 답변해 주세요 (JSON 코드 블록 없이 순수 JSON만)
         cleanResponse = cleanResponse.substring(jsonStart, jsonEnd + 1);
       }
 
+      console.log('🔍 참/거짓 원본 응답:', response);
       console.log('🔍 참/거짓 정리된 JSON 응답:', cleanResponse);
-      const parsed = JSON.parse(cleanResponse);
+
+      // JSON 검증 및 파싱
+      let parsed;
+      try {
+        parsed = JSON.parse(cleanResponse);
+      } catch (parseError) {
+        console.error('JSON 파싱 실패, 대체 로직 시도:', parseError);
+
+        // 대체 방법: 정규식으로 필요한 값들 추출
+        const statementMatch = cleanResponse.match(/"statement"\s*:\s*"([^"]+)"/);
+        const isTrueMatch = cleanResponse.match(/"is_true"\s*:\s*(true|false)/);
+        const explanationMatch = cleanResponse.match(/"explanation"\s*:\s*"([^"]+)"/);
+
+        if (statementMatch && isTrueMatch && explanationMatch) {
+          parsed = {
+            statement: statementMatch[1],
+            is_true: isTrueMatch[1] === 'true',
+            explanation: explanationMatch[1]
+          };
+          console.log('✅ 정규식으로 JSON 파싱 성공:', parsed);
+        } else {
+          throw new Error('JSON 파싱 및 정규식 추출 모두 실패');
+        }
+      }
       return {
         question: parsed.statement,
         question_type: 'true_false',
