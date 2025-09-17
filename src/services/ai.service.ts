@@ -721,6 +721,216 @@ JSON 형식으로 응답해주세요:
       throw new Error('AI 응답 생성 중 오류가 발생했습니다: ' + (error instanceof Error ? error.message : 'Unknown error'));
     }
   }
+
+  // 퀴즈 생성 메서드들
+  async generateQuizQuestions(
+    nodes: any[],
+    options: {
+      totalQuestions: number;
+      difficulties: { easy: number; medium: number; hard: number };
+      questionTypes: string[];
+    }
+  ): Promise<any[]> {
+    try {
+      console.log('🎯 AI 퀴즈 생성 시작:', { nodeCount: nodes.length, totalQuestions: options.totalQuestions });
+
+      const questions: any[] = [];
+
+      for (const node of nodes) {
+        const nodeQuestions = await this.generateQuestionsForNode(node, options);
+        questions.push(...nodeQuestions);
+      }
+
+      // 섞고 원하는 개수만큼 반환
+      const shuffled = questions.sort(() => Math.random() - 0.5);
+      const result = shuffled.slice(0, options.totalQuestions);
+
+      console.log(`✅ AI 퀴즈 생성 완료: ${result.length}개 문제 생성`);
+      return result;
+    } catch (error) {
+      console.error('❌ AI 퀴즈 생성 실패:', error);
+      throw new Error('AI 퀴즈 생성에 실패했습니다.');
+    }
+  }
+
+  private async generateQuestionsForNode(
+    node: any,
+    options: {
+      totalQuestions: number;
+      difficulties: { easy: number; medium: number; hard: number };
+      questionTypes: string[];
+    }
+  ): Promise<any[]> {
+    const questionsPerNode = Math.ceil(options.totalQuestions / 3); // 노드당 문제 수
+    const questions: any[] = [];
+
+    for (let i = 0; i < questionsPerNode; i++) {
+      const difficulty = this.selectRandomDifficulty(options.difficulties);
+      const questionType = options.questionTypes[Math.floor(Math.random() * options.questionTypes.length)];
+
+      let question;
+      if (questionType === 'multiple_choice') {
+        question = await this.generateMultipleChoiceQuestion(node, difficulty);
+      } else if (questionType === 'true_false') {
+        question = await this.generateTrueFalseQuestion(node, difficulty);
+      } else {
+        question = await this.generateShortAnswerQuestion(node, difficulty);
+      }
+
+      if (question) {
+        questions.push(question);
+      }
+    }
+
+    return questions;
+  }
+
+  private selectRandomDifficulty(difficulties: { easy: number; medium: number; hard: number }): 'easy' | 'medium' | 'hard' {
+    const total = difficulties.easy + difficulties.medium + difficulties.hard;
+    const random = Math.random() * total;
+
+    if (random < difficulties.easy) return 'easy';
+    if (random < difficulties.easy + difficulties.medium) return 'medium';
+    return 'hard';
+  }
+
+  private async generateMultipleChoiceQuestion(node: any, difficulty: 'easy' | 'medium' | 'hard'): Promise<any> {
+    const difficultyPrompts = {
+      easy: '기본적인 개념이나 정의를 묻는',
+      medium: '개념들 간의 관계나 응용을 묻는',
+      hard: '비판적 사고나 종합적 분석을 요구하는'
+    };
+
+    const prompt = `다음 내용을 바탕으로 ${difficultyPrompts[difficulty]} 객관식 문제를 만들어 주세요.
+
+제목: ${node.title}
+내용: ${node.content}
+
+JSON 형식으로 답변해 주세요 (JSON 코드 블록 없이 순수 JSON만):
+{
+  "question": "문제",
+  "options": ["선택지1", "선택지2", "선택지3", "선택지4"],
+  "correct_answer": "정답",
+  "explanation": "해설"
+}
+
+문제는 명확하고 구체적이어야 하며, 선택지는 4개, 정답은 명확해야 합니다.`;
+
+    try {
+      const response = await this.generateResponse(prompt, {
+        temperature: 0.7,
+        maxTokens: 500
+      });
+
+      // JSON 코드 블록 제거
+      let cleanResponse = response.trim();
+      if (cleanResponse.startsWith('```json')) {
+        cleanResponse = cleanResponse.replace(/```json\s*/, '').replace(/```\s*$/, '');
+      }
+
+      const parsed = JSON.parse(cleanResponse);
+      return {
+        question: parsed.question,
+        question_type: 'multiple_choice',
+        options: parsed.options,
+        correct_answer: parsed.correct_answer,
+        explanation: parsed.explanation,
+        difficulty,
+        points: difficulty === 'easy' ? 1 : difficulty === 'medium' ? 2 : 3,
+        tags: node.tags || []
+      };
+    } catch (error) {
+      console.error('객관식 문제 생성 실패:', error);
+      return null;
+    }
+  }
+
+  private async generateTrueFalseQuestion(node: any, difficulty: 'easy' | 'medium' | 'hard'): Promise<any> {
+    const prompt = `다음 내용을 바탕으로 참/거짓 문제를 만들어 주세요.
+
+제목: ${node.title}
+내용: ${node.content}
+
+JSON 형식으로 답변해 주세요 (JSON 코드 블록 없이 순수 JSON만):
+{
+  "statement": "판단할 문장",
+  "is_true": true/false,
+  "explanation": "해설"
+}
+
+문장은 명확하고 구체적이어야 합니다.`;
+
+    try {
+      const response = await this.generateResponse(prompt, {
+        temperature: 0.7,
+        maxTokens: 300
+      });
+
+      // JSON 코드 블록 제거
+      let cleanResponse = response.trim();
+      if (cleanResponse.startsWith('```json')) {
+        cleanResponse = cleanResponse.replace(/```json\s*/, '').replace(/```\s*$/, '');
+      }
+
+      const parsed = JSON.parse(cleanResponse);
+      return {
+        question: parsed.statement,
+        question_type: 'true_false',
+        options: ['참 (True)', '거짓 (False)'],
+        correct_answer: parsed.is_true ? '참 (True)' : '거짓 (False)',
+        explanation: parsed.explanation,
+        difficulty,
+        points: difficulty === 'easy' ? 1 : difficulty === 'medium' ? 2 : 3,
+        tags: node.tags || []
+      };
+    } catch (error) {
+      console.error('참/거짓 문제 생성 실패:', error);
+      return null;
+    }
+  }
+
+  private async generateShortAnswerQuestion(node: any, difficulty: 'easy' | 'medium' | 'hard'): Promise<any> {
+    const prompt = `다음 내용을 바탕으로 단답형 문제를 만들어 주세요.
+
+제목: ${node.title}
+내용: ${node.content}
+
+JSON 형식으로 답변해 주세요 (JSON 코드 블록 없이 순수 JSON만):
+{
+  "question": "문제",
+  "correct_answer": "정답",
+  "explanation": "해설"
+}
+
+문제는 명확한 단답을 요구해야 합니다.`;
+
+    try {
+      const response = await this.generateResponse(prompt, {
+        temperature: 0.7,
+        maxTokens: 300
+      });
+
+      // JSON 코드 블록 제거
+      let cleanResponse = response.trim();
+      if (cleanResponse.startsWith('```json')) {
+        cleanResponse = cleanResponse.replace(/```json\s*/, '').replace(/```\s*$/, '');
+      }
+
+      const parsed = JSON.parse(cleanResponse);
+      return {
+        question: parsed.question,
+        question_type: 'short_answer',
+        correct_answer: parsed.correct_answer,
+        explanation: parsed.explanation,
+        difficulty,
+        points: difficulty === 'easy' ? 1 : difficulty === 'medium' ? 2 : 3,
+        tags: node.tags || []
+      };
+    } catch (error) {
+      console.error('단답형 문제 생성 실패:', error);
+      return null;
+    }
+  }
 }
 
 export const aiService = new AIService()

@@ -10,7 +10,8 @@ import {
   ArrowLeftIcon,
   AcademicCapIcon,
   DocumentTextIcon,
-  BeakerIcon
+  BeakerIcon,
+  ChartBarIcon
 } from '@heroicons/react/24/outline';
 import { MultiSelectNodes } from '../../components/MultiSelectNodes';
 import { knowledgeService, type KnowledgeNode } from '../../services/knowledge.service';
@@ -277,6 +278,24 @@ export const StudyActivitiesPage: React.FC = () => {
                   );
                 })}
               </div>
+            </div>
+
+            {/* 퀴즈 히스토리 */}
+            <div className="bg-white border border-gray-200 rounded-xl p-6">
+              <h3 className="text-lg font-semibold text-gray-900 mb-4 flex items-center gap-2">
+                <ChartBarIcon className="h-5 w-5 text-primary-600" />
+                퀴즈 히스토리
+              </h3>
+              <p className="text-sm text-gray-600 mb-4">
+                지금까지 완료한 퀴즈들의 결과를 확인하고 복습해보세요.
+              </p>
+              <button
+                onClick={() => navigate('/app/study/quiz/history')}
+                className="w-full px-4 py-3 bg-gradient-to-r from-purple-500 to-blue-600 text-white rounded-lg hover:from-purple-600 hover:to-blue-700 transition-all duration-200 flex items-center justify-center gap-2 font-medium"
+              >
+                <ChartBarIcon className="h-4 w-4" />
+                퀴즈 히스토리 보기
+              </button>
             </div>
 
             {/* 도움말 */}

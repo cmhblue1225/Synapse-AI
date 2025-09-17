@@ -1,11 +1,13 @@
 import React, { useState, useEffect } from 'react';
-import { useSearchParams, Link } from 'react-router-dom';
+import { useSearchParams, Link, useNavigate } from 'react-router-dom';
 import { ArrowLeftIcon, ArrowPathIcon, CheckIcon, XMarkIcon, ClockIcon, QuestionMarkCircleIcon } from '@heroicons/react/24/outline';
 import { TrophyIcon, FireIcon, LightBulbIcon, ChartBarIcon } from '@heroicons/react/24/solid';
-import { studyService, type QuizResult } from '../../services/study.service';
+import { studyService, type QuizResult, type QuizQuestion } from '../../services/study.service';
 import { knowledgeService, type KnowledgeNode } from '../../services/knowledge.service';
+import { aiService } from '../../services/ai.service';
+import { QuizSettingsModal } from '../../components/QuizSettingsModal';
 
-interface QuizQuestion {
+interface QuizQuestionUI {
   id: string;
   question: string;
   options: string[];
@@ -18,7 +20,7 @@ interface QuizQuestion {
 }
 
 interface QuizState {
-  questions: QuizQuestion[];
+  questions: QuizQuestionUI[];
   currentQuestionIndex: number;
   userAnswers: (number | null)[];
   selectedAnswer: number | null;
@@ -44,12 +46,15 @@ interface QuizStats {
 
 export const QuizPage: React.FC = () => {
   const [searchParams] = useSearchParams();
+  const navigate = useNavigate();
   const nodeIds = searchParams.get('nodes')?.split(',') || [];
 
   const [selectedNodes, setSelectedNodes] = useState<KnowledgeNode[]>([]);
   const [isLoading, setIsLoading] = useState(false);
   const [isGenerating, setIsGenerating] = useState(false);
   const [sessionId, setSessionId] = useState<string | null>(null);
+  const [showSettingsModal, setShowSettingsModal] = useState(false);
+  const [dbQuestions, setDbQuestions] = useState<QuizQuestion[]>([]);
 
   const [quizState, setQuizState] = useState<QuizState>({
     questions: [],
@@ -112,7 +117,12 @@ export const QuizPage: React.FC = () => {
     }
   };
 
-  const generateQuiz = async () => {
+  const generateQuiz = async (settings: {
+    totalQuestions: number;
+    timePerQuestion: number;
+    difficulties: { easy: number; medium: number; hard: number };
+    questionTypes: string[];
+  }) => {
     if (selectedNodes.length === 0) return;
 
     setIsGenerating(true);
@@ -124,158 +134,85 @@ export const QuizPage: React.FC = () => {
         description: 'AI가 생성한 퀴즈',
         node_ids: selectedNodes.map(n => n.id),
         session_data: {
-          quiz_settings: {
-            total_questions: 20,
-            time_per_question: 60,
-            difficulty_distribution: { easy: 30, medium: 50, hard: 20 },
-            question_types: ['multiple_choice', 'true_false', 'fill_blank']
-          }
+          quiz_settings: settings
         },
         progress: 0
       });
 
       setSessionId(session.id);
 
-      // Generate quiz questions
-      const questions = await generateQuizQuestions(selectedNodes);
+      // AI로 퀴즈 문제 생성
+      console.log('🎯 AI 퀴즈 생성 시작:', settings);
+      const aiQuestions = await aiService.generateQuizQuestions(selectedNodes, settings);
+
+      // DB에 저장
+      const dbQuestionData = aiQuestions.map(q => ({
+        session_id: session.id,
+        question: q.question,
+        question_type: q.question_type,
+        options: q.options,
+        correct_answer: q.correct_answer,
+        explanation: q.explanation,
+        difficulty: q.difficulty,
+        points: q.points,
+        tags: q.tags
+      }));
+
+      const savedQuestions = await studyService.createQuizQuestions(dbQuestionData);
+      setDbQuestions(savedQuestions);
+
+      // UI용 형식으로 변환
+      const uiQuestions: QuizQuestionUI[] = savedQuestions.map((dbQ, index) => ({
+        id: dbQ.id,
+        question: dbQ.question,
+        options: dbQ.options || [],
+        correctAnswer: dbQ.options?.indexOf(dbQ.correct_answer) || 0,
+        explanation: dbQ.explanation || '',
+        difficulty: dbQ.difficulty,
+        timeLimit: settings.timePerQuestion,
+        category: selectedNodes[0]?.node_type || 'Knowledge',
+        tags: dbQ.tags
+      }));
 
       setQuizState({
-        questions,
+        questions: uiQuestions,
         currentQuestionIndex: 0,
-        userAnswers: new Array(questions.length).fill(null),
+        userAnswers: new Array(uiQuestions.length).fill(null),
         selectedAnswer: null,
         showResult: false,
-        timeLeft: questions[0]?.timeLimit || 60,
+        timeLeft: settings.timePerQuestion,
         startTime: Date.now(),
         isTimerActive: false,
         isCompleted: false
       });
 
+      console.log(`✅ 퀴즈 생성 완료: ${uiQuestions.length}개 문제`);
+
     } catch (error) {
-      console.error('Failed to generate quiz:', error);
+      console.error('❌ 퀴즈 생성 실패:', error);
+      alert('퀴즈 생성에 실패했습니다. 다시 시도해주세요.');
     } finally {
       setIsGenerating(false);
     }
   };
 
-  const generateQuizQuestions = async (nodes: KnowledgeNode[]): Promise<QuizQuestion[]> => {
-    const questions: QuizQuestion[] = [];
-    const totalQuestions = 20;
-    const questionsPerNode = Math.ceil(totalQuestions / nodes.length);
+  // 퀴즈 결과 저장 개선
+  const saveQuizResult = async (questionIndex: number, isCorrect: boolean, timeTaken: number) => {
+    if (!sessionId || !dbQuestions[questionIndex]) return;
 
-    for (const node of nodes) {
-      const nodeQuestions = await generateQuestionsForNode(node, questionsPerNode);
-      questions.push(...nodeQuestions);
+    try {
+      await studyService.createQuizResults([{
+        session_id: sessionId,
+        question_id: dbQuestions[questionIndex].id,
+        user_answer: quizState.selectedAnswer !== null ?
+          quizState.questions[questionIndex].options[quizState.selectedAnswer] : undefined,
+        is_correct: isCorrect,
+        time_taken: Math.round(timeTaken),
+        points_earned: isCorrect ? dbQuestions[questionIndex].points : 0
+      }]);
+    } catch (error) {
+      console.error('퀴즈 결과 저장 실패:', error);
     }
-
-    // Shuffle questions
-    return questions.sort(() => Math.random() - 0.5).slice(0, totalQuestions);
-  };
-
-  const generateQuestionsForNode = async (node: KnowledgeNode, count: number): Promise<QuizQuestion[]> => {
-    const questions: QuizQuestion[] = [];
-    const content = node.content || '';
-    const title = node.title;
-
-    for (let i = 0; i < count; i++) {
-      const questionTypes = ['multiple_choice', 'true_false'];
-      const questionType = questionTypes[Math.floor(Math.random() * questionTypes.length)];
-      const difficulties: ('easy' | 'medium' | 'hard')[] = ['easy', 'medium', 'hard'];
-      const difficulty = difficulties[Math.floor(Math.random() * difficulties.length)];
-
-      let question: QuizQuestion;
-
-      if (questionType === 'multiple_choice') {
-        question = generateMultipleChoiceQuestion(node, difficulty);
-      } else {
-        question = generateTrueFalseQuestion(node, difficulty);
-      }
-
-      questions.push(question);
-    }
-
-    return questions;
-  };
-
-  const generateMultipleChoiceQuestion = (node: KnowledgeNode, difficulty: 'easy' | 'medium' | 'hard'): QuizQuestion => {
-    const content = node.content || '';
-    const title = node.title;
-
-    // Generate question based on difficulty
-    let question: string;
-    let correctOption: string;
-    let distractors: string[];
-
-    switch (difficulty) {
-      case 'easy':
-        question = `${title}에 대한 설명으로 올바른 것은?`;
-        correctOption = content.substring(0, 100) + '...';
-        distractors = [
-          '잘못된 설명 1...',
-          '잘못된 설명 2...',
-          '잘못된 설명 3...'
-        ];
-        break;
-      case 'medium':
-        question = `${title}의 핵심 특징은 무엇인가요?`;
-        correctOption = `주요 특징: ${content.substring(50, 150)}...`;
-        distractors = [
-          '부정확한 특징 1...',
-          '부정확한 특징 2...',
-          '부정확한 특징 3...'
-        ];
-        break;
-      case 'hard':
-        question = `${title}를 다른 개념과 비교했을 때의 차이점은?`;
-        correctOption = `차이점: ${content.substring(100, 200)}...`;
-        distractors = [
-          '잘못된 비교 1...',
-          '잘못된 비교 2...',
-          '잘못된 비교 3...'
-        ];
-        break;
-    }
-
-    const options = [correctOption, ...distractors].sort(() => Math.random() - 0.5);
-    const correctAnswer = options.indexOf(correctOption);
-
-    return {
-      id: crypto.randomUUID(),
-      question,
-      options,
-      correctAnswer,
-      explanation: `정답: ${correctOption}`,
-      difficulty,
-      timeLimit: difficulty === 'easy' ? 45 : difficulty === 'medium' ? 60 : 90,
-      category: node.node_type,
-      tags: node.tags || []
-    };
-  };
-
-  const generateTrueFalseQuestion = (node: KnowledgeNode, difficulty: 'easy' | 'medium' | 'hard'): QuizQuestion => {
-    const content = node.content || '';
-    const title = node.title;
-
-    const isTrue = Math.random() > 0.5;
-
-    let statement: string;
-    if (isTrue) {
-      statement = `${title}에 대한 다음 설명이 올바르다: ${content.substring(0, 150)}...`;
-    } else {
-      statement = `${title}에 대한 다음 설명이 올바르다: 잘못된 설명입니다...`;
-    }
-
-    return {
-      id: crypto.randomUUID(),
-      question: statement,
-      options: ['참 (True)', '거짓 (False)'],
-      correctAnswer: isTrue ? 0 : 1,
-      explanation: isTrue ? '이 설명은 올바른 설명입니다.' : '이 설명은 틀린 설명입니다.',
-      difficulty,
-      timeLimit: difficulty === 'easy' ? 30 : difficulty === 'medium' ? 45 : 60,
-      category: node.node_type,
-      tags: node.tags || []
-    };
   };
 
   const startQuiz = () => {
@@ -307,22 +244,8 @@ export const QuizPage: React.FC = () => {
     const newUserAnswers = [...quizState.userAnswers];
     newUserAnswers[quizState.currentQuestionIndex] = quizState.selectedAnswer;
 
-    // Save quiz result
-    if (sessionId) {
-      try {
-        await studyService.createQuizResults([{
-          session_id: sessionId,
-          question: currentQuestion.question,
-          user_answer: currentQuestion.options[quizState.selectedAnswer || 0],
-          correct_answer: currentQuestion.options[currentQuestion.correctAnswer],
-          is_correct: isCorrect,
-          time_taken: Math.round(timeTaken),
-          difficulty: currentQuestion.difficulty
-        }]);
-      } catch (error) {
-        console.error('Failed to save quiz result:', error);
-      }
-    }
+    // Save quiz result with improved method
+    await saveQuizResult(quizState.currentQuestionIndex, isCorrect, timeTaken);
 
     setQuizState(prev => ({
       ...prev,
@@ -390,6 +313,11 @@ export const QuizPage: React.FC = () => {
       isCompleted: true,
       isTimerActive: false
     }));
+
+    // 결과 페이지로 이동
+    if (sessionId) {
+      navigate(`/app/study/quiz/results?session=${sessionId}`);
+    }
   };
 
   const calculateQuizStats = (): QuizStats => {
@@ -504,7 +432,7 @@ export const QuizPage: React.FC = () => {
           )}
 
           <button
-            onClick={generateQuiz}
+            onClick={() => setShowSettingsModal(true)}
             disabled={selectedNodes.length === 0 || isGenerating}
             className="inline-flex items-center px-6 py-3 border border-transparent text-base font-medium rounded-md text-white bg-purple-600 hover:bg-purple-700 disabled:opacity-50 disabled:cursor-not-allowed"
           >
@@ -514,7 +442,7 @@ export const QuizPage: React.FC = () => {
                 퀴즈 생성 중...
               </>
             ) : (
-              '퀴즈 시작하기'
+              '퀴즈 설정하기'
             )}
           </button>
         </div>
@@ -712,6 +640,14 @@ export const QuizPage: React.FC = () => {
           </div>
         </div>
       )}
+
+      {/* 퀴즈 설정 모달 */}
+      <QuizSettingsModal
+        isOpen={showSettingsModal}
+        onClose={() => setShowSettingsModal(false)}
+        onStartQuiz={generateQuiz}
+        selectedNodesCount={selectedNodes.length}
+      />
     </div>
   );
 };

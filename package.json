@@ -39,6 +39,7 @@
     "concurrently": "^9.2.1",
     "cors": "^2.8.5",
     "d3": "^7.9.0",
+    "date-fns": "^4.1.0",
     "dotenv": "^17.2.2",
     "express": "^5.1.0",
     "isomorphic-dompurify": "^2.26.0",

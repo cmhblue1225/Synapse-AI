@@ -45,6 +45,8 @@ import { FlashcardsPage } from './pages/study/FlashcardsPage';
 import { QuizPage } from './pages/study/QuizPage';
 import { ConceptMapPage } from './pages/study/ConceptMapPage';
 import { AIFeedbackPage } from './pages/study/AIFeedbackPage';
+import { QuizResultsPage } from './pages/study/QuizResultsPage';
+import { QuizHistoryPage } from './pages/study/QuizHistoryPage';
 
 // Protected Route component
 import { ProtectedRoute } from './components/auth/ProtectedRoute';
@@ -127,6 +129,8 @@ function App() {
               <Route path="study/memory-notes" element={<MemoryNotesPage />} />
               <Route path="study/flashcards" element={<FlashcardsPage />} />
               <Route path="study/quiz" element={<QuizPage />} />
+              <Route path="study/quiz/results" element={<QuizResultsPage />} />
+              <Route path="study/quiz/history" element={<QuizHistoryPage />} />
               <Route path="study/concept-map" element={<ConceptMapPage />} />
               <Route path="study/ai-feedback" element={<AIFeedbackPage />} />
 

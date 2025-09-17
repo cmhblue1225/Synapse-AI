@@ -32,15 +32,29 @@ export interface Flashcard {
   updated_at: string;
 }
 
-export interface QuizResult {
+export interface QuizQuestion {
   id: string;
   session_id: string;
   question: string;
-  user_answer?: string;
+  question_type: 'multiple_choice' | 'true_false' | 'short_answer' | 'essay';
+  options?: string[];
   correct_answer: string;
+  explanation?: string;
+  difficulty: 'easy' | 'medium' | 'hard';
+  points: number;
+  tags: string[];
+  created_at: string;
+  updated_at: string;
+}
+
+export interface QuizResult {
+  id: string;
+  session_id: string;
+  question_id: string;
+  user_answer?: string;
   is_correct: boolean;
   time_taken?: number;
-  difficulty: 'easy' | 'medium' | 'hard';
+  points_earned: number;
   created_at: string;
 }
 
@@ -240,6 +254,40 @@ class StudyService {
       .from('flashcards')
       .select('*')
       .eq('id', flashcardId)
+      .single();
+
+    if (error) throw error;
+    return data;
+  }
+
+  // 퀴즈 질문 관리
+  async createQuizQuestions(questions: Omit<QuizQuestion, 'id' | 'created_at' | 'updated_at'>[]): Promise<QuizQuestion[]> {
+    const { data, error } = await supabase
+      .from('quiz_questions')
+      .insert(questions)
+      .select();
+
+    if (error) throw error;
+    return data || [];
+  }
+
+  async getQuizQuestions(sessionId: string): Promise<QuizQuestion[]> {
+    const { data, error } = await supabase
+      .from('quiz_questions')
+      .select('*')
+      .eq('session_id', sessionId)
+      .order('created_at', { ascending: true });
+
+    if (error) throw error;
+    return data || [];
+  }
+
+  async updateQuizQuestion(questionId: string, updates: Partial<QuizQuestion>): Promise<QuizQuestion> {
+    const { data, error } = await supabase
+      .from('quiz_questions')
+      .update(updates)
+      .eq('id', questionId)
+      .select()
       .single();
 
     if (error) throw error;
