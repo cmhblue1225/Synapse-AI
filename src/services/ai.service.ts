@@ -759,9 +759,15 @@ JSON 형식으로 응답해주세요:
   private async enrichNodeWithAttachments(node: any): Promise<any> {
     try {
       console.log(`📎 첨부파일 내용 확인 중: ${node.title}`);
+      console.log(`📄 노드 metadata:`, JSON.stringify(node.metadata, null, 2));
 
-      // metadata에서 첨부파일 정보 확인
-      const attachments = node.metadata?.attachments || [];
+      // metadata에서 첨부파일 정보 확인 (다양한 경로 시도)
+      const attachments = node.metadata?.attachments ||
+                         node.metadata?.files ||
+                         node.attachments ||
+                         [];
+
+      console.log(`🔍 첨부파일 검색 결과:`, attachments);
 
       if (!attachments.length) {
         console.log(`📝 첨부파일 없음: ${node.title}`);
@@ -820,34 +826,48 @@ JSON 형식으로 응답해주세요:
       questionTypes: string[];
     }
   ): Promise<any[]> {
-    const questionsPerNode = Math.ceil(options.totalQuestions / 3); // 노드당 문제 수
+    const questionsPerNode = Math.ceil(options.totalQuestions / 1); // 단일 노드에서 모든 문제 생성
     const questions: any[] = [];
+    const maxAttempts = questionsPerNode * 2; // 실패를 고려해 더 많은 시도
 
     console.log(`📝 ${node.title}에서 ${questionsPerNode}개 문제 생성 시작${node.hasAttachments ? ` (첨부파일 ${node.attachmentCount}개 포함)` : ''}`);
 
-    for (let i = 0; i < questionsPerNode; i++) {
+    let attempts = 0;
+    while (questions.length < questionsPerNode && attempts < maxAttempts) {
+      attempts++;
       const difficulty = this.selectRandomDifficulty(options.difficulties);
       const questionType = options.questionTypes[Math.floor(Math.random() * options.questionTypes.length)];
 
-      let question;
-      if (questionType === 'multiple_choice') {
-        question = await this.generateMultipleChoiceQuestion(node, difficulty);
-      } else if (questionType === 'true_false') {
-        question = await this.generateTrueFalseQuestion(node, difficulty);
-      }
-      // 단답형 문제 생성 제거됨
+      console.log(`🔄 시도 ${attempts}: ${questionType} ${difficulty} 문제 생성 중...`);
 
-      if (question) {
-        // 첨부파일이 포함된 문제인지 표시
-        if (node.hasAttachments) {
-          question.hasAttachments = true;
-          question.attachmentCount = node.attachmentCount;
+      let question;
+      try {
+        if (questionType === 'multiple_choice') {
+          question = await this.generateMultipleChoiceQuestion(node, difficulty);
+        } else if (questionType === 'true_false') {
+          question = await this.generateTrueFalseQuestion(node, difficulty);
         }
-        questions.push(question);
-        console.log(`✅ ${questionType} ${difficulty} 문제 생성 완료: ${node.title}`);
+
+        if (question) {
+          // 첨부파일이 포함된 문제인지 표시
+          if (node.hasAttachments) {
+            question.hasAttachments = true;
+            question.attachmentCount = node.attachmentCount;
+          }
+          questions.push(question);
+          console.log(`✅ ${questionType} ${difficulty} 문제 생성 완료: ${node.title} (${questions.length}/${questionsPerNode})`);
+        } else {
+          console.log(`❌ ${questionType} ${difficulty} 문제 생성 실패: ${node.title}`);
+        }
+      } catch (error) {
+        console.error(`❌ 문제 생성 중 오류: ${questionType} ${difficulty}`, error);
       }
+
+      // API 레이트 리밋 방지를 위한 짧은 지연
+      await new Promise(resolve => setTimeout(resolve, 500));
     }
 
+    console.log(`📊 ${node.title} 문제 생성 완료: ${questions.length}개 성공 (${attempts}번 시도)`);
     return questions;
   }
 
@@ -896,12 +916,23 @@ JSON 형식으로 답변해 주세요 (JSON 코드 블록 없이 순수 JSON만)
         maxTokens: 600
       });
 
-      // JSON 코드 블록 제거
+      // JSON 코드 블록 제거 및 정리 (더 강력한 정리)
       let cleanResponse = response.trim();
-      if (cleanResponse.startsWith('```json')) {
-        cleanResponse = cleanResponse.replace(/```json\s*/, '').replace(/```\s*$/, '');
+
+      // 다양한 형태의 JSON 코드 블록 제거
+      cleanResponse = cleanResponse.replace(/```json\s*/g, '');
+      cleanResponse = cleanResponse.replace(/```\s*/g, '');
+      cleanResponse = cleanResponse.replace(/^json\s*/g, '');
+
+      // JSON 객체만 추출 (첫 번째 { 부터 마지막 } 까지)
+      const jsonStart = cleanResponse.indexOf('{');
+      const jsonEnd = cleanResponse.lastIndexOf('}');
+
+      if (jsonStart !== -1 && jsonEnd !== -1 && jsonEnd > jsonStart) {
+        cleanResponse = cleanResponse.substring(jsonStart, jsonEnd + 1);
       }
 
+      console.log('🔍 객관식 정리된 JSON 응답:', cleanResponse);
       const parsed = JSON.parse(cleanResponse);
       return {
         question: parsed.question,
@@ -954,12 +985,23 @@ JSON 형식으로 답변해 주세요 (JSON 코드 블록 없이 순수 JSON만)
         maxTokens: 400
       });
 
-      // JSON 코드 블록 제거
+      // JSON 코드 블록 제거 및 정리 (더 강력한 정리)
       let cleanResponse = response.trim();
-      if (cleanResponse.startsWith('```json')) {
-        cleanResponse = cleanResponse.replace(/```json\s*/, '').replace(/```\s*$/, '');
+
+      // 다양한 형태의 JSON 코드 블록 제거
+      cleanResponse = cleanResponse.replace(/```json\s*/g, '');
+      cleanResponse = cleanResponse.replace(/```\s*/g, '');
+      cleanResponse = cleanResponse.replace(/^json\s*/g, '');
+
+      // JSON 객체만 추출 (첫 번째 { 부터 마지막 } 까지)
+      const jsonStart = cleanResponse.indexOf('{');
+      const jsonEnd = cleanResponse.lastIndexOf('}');
+
+      if (jsonStart !== -1 && jsonEnd !== -1 && jsonEnd > jsonStart) {
+        cleanResponse = cleanResponse.substring(jsonStart, jsonEnd + 1);
       }
 
+      console.log('🔍 참/거짓 정리된 JSON 응답:', cleanResponse);
       const parsed = JSON.parse(cleanResponse);
       return {
         question: parsed.statement,
