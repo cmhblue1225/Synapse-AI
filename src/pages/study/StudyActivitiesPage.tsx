@@ -11,10 +11,15 @@ import {
   AcademicCapIcon,
   DocumentTextIcon,
   BeakerIcon,
-  ChartBarIcon
+  ChartBarIcon,
+  ClockIcon,
+  TrophyIcon,
+  FireIcon,
+  CalendarIcon
 } from '@heroicons/react/24/outline';
 import { MultiSelectNodes } from '../../components/MultiSelectNodes';
 import { knowledgeService, type KnowledgeNode } from '../../services/knowledge.service';
+import { studyService } from '../../services/study.service';
 
 type StudyActivityType =
   | 'memory_notes'
@@ -59,6 +64,20 @@ export const StudyActivitiesPage: React.FC = () => {
       );
     },
     enabled: selectedNodes.length > 0,
+  });
+
+  // 최근 학습 활동 가져오기
+  const { data: recentSessions = [] } = useQuery({
+    queryKey: ['recent-study-sessions'],
+    queryFn: () => studyService.getRecentStudySessions(5),
+    refetchInterval: 30000, // 30초마다 갱신
+  });
+
+  // 학습 통계 가져오기
+  const { data: studyStats } = useQuery({
+    queryKey: ['study-statistics'],
+    queryFn: () => studyService.getStudyStatistics(),
+    refetchInterval: 60000, // 1분마다 갱신
   });
 
   const studyActivities: StudyActivity[] = [
@@ -191,6 +210,61 @@ export const StudyActivitiesPage: React.FC = () => {
           </div>
         </div>
 
+        {/* 학습 통계 대시보드 */}
+        {studyStats && (
+          <div className="mb-8">
+            <h2 className="text-2xl font-bold text-gray-900 mb-6 flex items-center gap-2">
+              <ChartBarIcon className="h-6 w-6 text-indigo-600" />
+              학습 현황 대시보드
+            </h2>
+            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 mb-8">
+              {/* 총 학습 세션 */}
+              <div className="bg-gradient-to-r from-blue-500 to-blue-600 rounded-lg p-6 text-white">
+                <div className="flex items-center justify-between">
+                  <div>
+                    <p className="text-blue-100 text-sm font-medium">총 학습 세션</p>
+                    <p className="text-3xl font-bold">{studyStats.totalSessions || 0}</p>
+                  </div>
+                  <BookOpenIcon className="h-8 w-8 text-blue-200" />
+                </div>
+              </div>
+
+              {/* 평균 점수 */}
+              <div className="bg-gradient-to-r from-green-500 to-green-600 rounded-lg p-6 text-white">
+                <div className="flex items-center justify-between">
+                  <div>
+                    <p className="text-green-100 text-sm font-medium">평균 점수</p>
+                    <p className="text-3xl font-bold">{studyStats.averageScore || 0}%</p>
+                  </div>
+                  <TrophyIcon className="h-8 w-8 text-green-200" />
+                </div>
+              </div>
+
+              {/* 학습 시간 */}
+              <div className="bg-gradient-to-r from-purple-500 to-purple-600 rounded-lg p-6 text-white">
+                <div className="flex items-center justify-between">
+                  <div>
+                    <p className="text-purple-100 text-sm font-medium">총 학습 시간</p>
+                    <p className="text-3xl font-bold">{Math.round((studyStats.totalTime || 0) / 60)}분</p>
+                  </div>
+                  <ClockIcon className="h-8 w-8 text-purple-200" />
+                </div>
+              </div>
+
+              {/* 연속 학습 일수 */}
+              <div className="bg-gradient-to-r from-orange-500 to-orange-600 rounded-lg p-6 text-white">
+                <div className="flex items-center justify-between">
+                  <div>
+                    <p className="text-orange-100 text-sm font-medium">연속 학습</p>
+                    <p className="text-3xl font-bold">{studyStats.streakDays || 0}일</p>
+                  </div>
+                  <FireIcon className="h-8 w-8 text-orange-200" />
+                </div>
+              </div>
+            </div>
+          </div>
+        )}
+
         <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
           {/* 노드 선택 패널 */}
           <div className="lg:col-span-2">
@@ -297,6 +371,64 @@ export const StudyActivitiesPage: React.FC = () => {
                 퀴즈 히스토리 보기
               </button>
             </div>
+
+            {/* 최근 학습 활동 */}
+            {recentSessions.length > 0 && (
+              <div className="bg-white border border-gray-200 rounded-xl p-6">
+                <h3 className="text-lg font-semibold text-gray-900 mb-4 flex items-center gap-2">
+                  <CalendarIcon className="h-5 w-5 text-gray-500" />
+                  최근 학습 활동
+                </h3>
+                <div className="space-y-3">
+                  {recentSessions.map((session: any, index: number) => (
+                    <div
+                      key={session.id}
+                      className="flex items-center justify-between p-3 bg-gray-50 rounded-lg hover:bg-gray-100 transition-colors cursor-pointer"
+                      onClick={() => {
+                        if (session.session_type === 'quiz') {
+                          navigate(`/app/study/quiz/results?session=${session.id}`);
+                        }
+                      }}
+                    >
+                      <div className="flex items-center gap-3">
+                        <div className={`w-2 h-2 rounded-full ${
+                          session.progress === 100 ? 'bg-green-500' : 'bg-yellow-500'
+                        }`}></div>
+                        <div>
+                          <p className="text-sm font-medium text-gray-900">
+                            {session.title || `${session.session_type} 세션`}
+                          </p>
+                          <p className="text-xs text-gray-500">
+                            {new Date(session.created_at).toLocaleDateString('ko-KR')} •
+                            {session.progress === 100 ? ' 완료' : ` ${session.progress}% 진행`}
+                          </p>
+                        </div>
+                      </div>
+                      <div className="flex items-center gap-2">
+                        {session.session_type === 'quiz' && session.progress === 100 && (
+                          <span className="text-xs bg-blue-100 text-blue-800 px-2 py-1 rounded-full">
+                            점수 보기
+                          </span>
+                        )}
+                        {session.progress === 100 && (
+                          <TrophyIcon className="h-4 w-4 text-green-500" />
+                        )}
+                      </div>
+                    </div>
+                  ))}
+                </div>
+
+                {/* 모든 활동 보기 링크 */}
+                <div className="mt-4 pt-4 border-t border-gray-200">
+                  <button
+                    onClick={() => navigate('/app/study/quiz/history')}
+                    className="w-full text-center text-sm text-gray-600 hover:text-gray-800 transition-colors"
+                  >
+                    모든 학습 기록 보기 →
+                  </button>
+                </div>
+              </div>
+            )}
 
             {/* 도움말 */}
             {selectedNodes.length === 0 && (

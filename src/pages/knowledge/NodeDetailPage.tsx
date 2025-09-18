@@ -621,28 +621,62 @@ export const NodeDetailPage: React.FC = () => {
                               </div>
                             </div>
 
-                            {/* 파일 요약 섹션 */}
+                            {/* 파일 요약 섹션 - 개선된 UI */}
                             {hasSummary && (
                               <div className="mt-3 pt-3 border-t border-gray-100">
-                                <button
-                                  onClick={() => toggleFileSummaryExpansion(index)}
-                                  className="flex items-center text-sm font-medium text-gray-700 hover:text-gray-900 transition-colors"
-                                >
-                                  {isExpanded ? (
-                                    <ChevronDownIcon className="h-4 w-4 mr-1" />
-                                  ) : (
-                                    <ChevronRightIcon className="h-4 w-4 mr-1" />
-                                  )}
-                                  파일 요약
-                                </button>
-
-                                {isExpanded && (
-                                  <div className="mt-2 p-3 bg-blue-50 rounded-md border-l-4 border-blue-200">
-                                    <p className="text-sm text-gray-700 leading-relaxed break-words whitespace-pre-wrap">
-                                      {file.summary}
-                                    </p>
+                                <div className="flex items-center justify-between mb-2">
+                                  <div className="flex items-center">
+                                    <SparklesIcon className="h-4 w-4 text-purple-500 mr-1" />
+                                    <span className="text-sm font-medium text-gray-700">AI 요약</span>
                                   </div>
-                                )}
+                                  <button
+                                    onClick={() => toggleFileSummaryExpansion(index)}
+                                    className="flex items-center text-xs text-gray-500 hover:text-gray-700 transition-colors"
+                                  >
+                                    {isExpanded ? (
+                                      <>
+                                        접기 <ChevronDownIcon className="h-3 w-3 ml-1" />
+                                      </>
+                                    ) : (
+                                      <>
+                                        자세히 <ChevronRightIcon className="h-3 w-3 ml-1" />
+                                      </>
+                                    )}
+                                  </button>
+                                </div>
+
+                                {/* 요약 미리보기 (항상 표시) */}
+                                <div className="bg-gradient-to-r from-blue-50 to-purple-50 rounded-lg p-3 border border-blue-100">
+                                  <p className="text-sm text-gray-700 leading-relaxed">
+                                    {isExpanded
+                                      ? file.summary
+                                      : file.summary.length > 150
+                                        ? `${file.summary.substring(0, 150)}...`
+                                        : file.summary
+                                    }
+                                  </p>
+
+                                  {/* 요약 길이가 긴 경우 더보기 표시 */}
+                                  {!isExpanded && file.summary.length > 150 && (
+                                    <button
+                                      onClick={() => toggleFileSummaryExpansion(index)}
+                                      className="mt-2 text-xs text-blue-600 hover:text-blue-800 font-medium transition-colors"
+                                    >
+                                      더 보기 →
+                                    </button>
+                                  )}
+                                </div>
+
+                                {/* 요약 메타데이터 */}
+                                <div className="mt-2 flex items-center justify-between text-xs text-gray-500">
+                                  <span className="flex items-center">
+                                    <AcademicCapIcon className="h-3 w-3 mr-1" />
+                                    AI 자동 생성
+                                  </span>
+                                  <span className="bg-purple-100 text-purple-700 px-2 py-1 rounded-full text-xs font-medium">
+                                    요약 완료
+                                  </span>
+                                </div>
                               </div>
                             )}
 
@@ -669,46 +703,60 @@ export const NodeDetailPage: React.FC = () => {
                                 </a>
                               </div>
 
-                              {/* AI 요약 생성 버튼 */}
-                              {!hasSummary && (
-                                <button
-                                  onClick={() => generateFileSummary(index, file)}
-                                  disabled={isGenerating}
-                                  className="w-full inline-flex items-center justify-center px-3 py-2 border border-blue-300 text-xs font-medium rounded-md text-blue-700 bg-blue-50 hover:bg-blue-100 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500 disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
-                                >
-                                  {isGenerating ? (
-                                    <>
-                                      <div className="animate-spin rounded-full h-3 w-3 border-b-2 border-blue-600 mr-2"></div>
-                                      AI 요약 생성 중...
-                                    </>
-                                  ) : (
-                                    <>
+                              {/* AI 요약 생성/재생성 통합 섹션 */}
+                              {!hasSummary && !isGenerating && (
+                                <div className="bg-gray-50 rounded-lg p-3 border border-dashed border-gray-300">
+                                  <div className="text-center">
+                                    <SparklesIcon className="mx-auto h-6 w-6 text-gray-400 mb-2" />
+                                    <p className="text-xs text-gray-600 mb-3">
+                                      AI가 이 파일의 내용을 분석하여 요약을 생성할 수 있습니다
+                                    </p>
+                                    <button
+                                      onClick={() => generateFileSummary(index, file)}
+                                      className="w-full inline-flex items-center justify-center px-3 py-2 border border-transparent text-xs font-medium rounded-md text-white bg-gradient-to-r from-blue-500 to-purple-600 hover:from-blue-600 hover:to-purple-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500 transition-all duration-200 shadow-sm"
+                                    >
                                       <SparklesIcon className="h-4 w-4 mr-1" />
-                                      AI 요약 생성
-                                    </>
-                                  )}
-                                </button>
+                                      AI 요약 생성하기
+                                    </button>
+                                  </div>
+                                </div>
                               )}
 
-                              {/* 요약 재생성 버튼 */}
-                              {hasSummary && (
-                                <button
-                                  onClick={() => generateFileSummary(index, file)}
-                                  disabled={isGenerating}
-                                  className="w-full inline-flex items-center justify-center px-3 py-2 border border-gray-300 text-xs font-medium rounded-md text-gray-600 bg-gray-50 hover:bg-gray-100 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-gray-500 disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
-                                >
-                                  {isGenerating ? (
-                                    <>
-                                      <div className="animate-spin rounded-full h-3 w-3 border-b-2 border-gray-600 mr-2"></div>
-                                      재생성 중...
-                                    </>
-                                  ) : (
-                                    <>
-                                      <SparklesIcon className="h-4 w-4 mr-1" />
-                                      요약 재생성
-                                    </>
-                                  )}
-                                </button>
+                              {/* 요약 생성 중 상태 */}
+                              {isGenerating && (
+                                <div className="bg-gradient-to-r from-blue-50 to-purple-50 rounded-lg p-4 border border-blue-200">
+                                  <div className="flex items-center">
+                                    <div className="animate-spin rounded-full h-5 w-5 border-2 border-blue-500 border-t-transparent mr-3"></div>
+                                    <div className="flex-1">
+                                      <p className="text-sm font-medium text-gray-900">AI 요약 생성 중</p>
+                                      <p className="text-xs text-gray-600 mt-1">
+                                        파일 내용을 분석하고 있습니다...
+                                      </p>
+                                    </div>
+                                  </div>
+
+                                  {/* 진행률 표시 */}
+                                  <div className="mt-3">
+                                    <div className="bg-gray-200 rounded-full h-1.5">
+                                      <div className="bg-gradient-to-r from-blue-500 to-purple-600 h-1.5 rounded-full animate-pulse" style={{width: '60%'}}></div>
+                                    </div>
+                                  </div>
+                                </div>
+                              )}
+
+                              {/* 요약 재생성 버튼 - 개선된 UI */}
+                              {hasSummary && !isGenerating && (
+                                <div className="border-t border-gray-100 pt-3">
+                                  <button
+                                    onClick={() => generateFileSummary(index, file)}
+                                    className="w-full inline-flex items-center justify-center px-3 py-2 border border-transparent text-xs font-medium rounded-md text-purple-700 bg-purple-50 hover:bg-purple-100 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-purple-500 transition-all duration-200 group"
+                                  >
+                                    <svg className="h-4 w-4 mr-1 group-hover:rotate-180 transition-transform duration-300" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15" />
+                                    </svg>
+                                    새로운 요약 생성
+                                  </button>
+                                </div>
                               )}
                             </div>
                           </div>

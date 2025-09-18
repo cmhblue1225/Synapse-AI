@@ -532,83 +532,149 @@ export const CreateNodePage: React.FC = () => {
                 </div>
               </div>
 
-              {/* 태그 */}
-              <div>
-                <div className="flex items-center justify-between mb-2">
-                  <label htmlFor="tags" className="block text-sm font-medium text-gray-700">
-                    태그 (쉼표로 구분)
-                  </label>
-                  <button
-                    type="button"
-                    onClick={generateTagSuggestions}
-                    disabled={aiProgress.tags === 'processing' || (!watchedTitle && !watchedContent && fileObjects.length === 0)}
-                    className="inline-flex items-center px-3 py-1 text-xs font-medium rounded-md text-white bg-gradient-to-r from-purple-500 to-pink-500 hover:from-purple-600 hover:to-pink-600 disabled:opacity-50 disabled:cursor-not-allowed"
-                  >
-                    {aiProgress.tags === 'processing' ? (
-                      <>
-                        <div className="animate-spin rounded-full h-3 w-3 border-b border-white mr-1"></div>
-                        생성 중...
-                      </>
-                    ) : (
-                      <>
-                        <SparklesIcon className="h-3 w-3 mr-1" />
-                        AI 태그 추천
-                      </>
-                    )}
-                  </button>
+              {/* 태그 섹션 - 개선된 디자인 */}
+              <div className="space-y-4">
+                <div className="bg-gradient-to-br from-indigo-50 via-purple-50 to-pink-50 border border-indigo-200 rounded-xl p-6">
+                  <div className="flex items-center justify-between mb-4">
+                    <div className="flex items-center space-x-2">
+                      <div className="p-2 bg-indigo-100 rounded-lg">
+                        <svg className="h-5 w-5 text-indigo-600" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M7 7h.01M7 3h5c.512 0 1.024.195 1.414.586l7 7a2 2 0 010 2.828l-7 7a2 2 0 01-2.828 0l-7-7A1.994 1.994 0 013 12V7a4 4 0 014-4z" />
+                        </svg>
+                      </div>
+                      <div>
+                        <label htmlFor="tags" className="text-sm font-semibold text-gray-900">
+                          스마트 태그
+                        </label>
+                        <p className="text-xs text-gray-600">
+                          콘텐츠를 쉽게 찾고 분류할 수 있도록 태그를 추가하세요
+                        </p>
+                      </div>
+                    </div>
+                    <button
+                      type="button"
+                      onClick={generateTagSuggestions}
+                      disabled={aiProgress.tags === 'processing' || (!watchedTitle && !watchedContent && fileObjects.length === 0)}
+                      className="inline-flex items-center px-4 py-2 text-sm font-medium rounded-lg text-white bg-gradient-to-r from-indigo-500 via-purple-500 to-pink-500 hover:from-indigo-600 hover:via-purple-600 hover:to-pink-600 disabled:opacity-50 disabled:cursor-not-allowed transition-all duration-200 shadow-sm hover:shadow-md"
+                    >
+                      {aiProgress.tags === 'processing' ? (
+                        <>
+                          <div className="animate-spin rounded-full h-4 w-4 border-2 border-white border-t-transparent mr-2"></div>
+                          AI 분석 중...
+                        </>
+                      ) : (
+                        <>
+                          <SparklesIcon className="h-4 w-4 mr-2" />
+                          AI 태그 추천
+                        </>
+                      )}
+                    </button>
+                  </div>
+
+                  <div className="relative">
+                    <input
+                      id="tags"
+                      type="text"
+                      value={tagsInput}
+                      onChange={handleTagsChange}
+                      className="w-full border-2 border-gray-200 rounded-lg px-4 py-3 text-sm bg-white/80 backdrop-blur-sm focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:border-transparent transition-all duration-200 placeholder-gray-400"
+                      placeholder="태그를 입력하세요 (예: 프로그래밍, Python, 머신러닝)"
+                    />
+                    <div className="absolute right-3 top-1/2 transform -translate-y-1/2">
+                      <span className="text-xs text-gray-400 bg-gray-100 px-2 py-1 rounded-md">
+                        쉼표로 구분
+                      </span>
+                    </div>
+                  </div>
                 </div>
 
-                <input
-                  id="tags"
-                  type="text"
-                  value={tagsInput}
-                  onChange={handleTagsChange}
-                  className="w-full border border-gray-300 rounded-md px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent"
-                  placeholder="예: 프로그래밍, Python, 머신러닝"
-                />
-
-                {/* 추천 태그 */}
+                {/* AI 추천 태그 - 개선된 디자인 */}
                 {showTagSuggestions && suggestedTags.length > 0 && (
-                  <div className="mt-2 p-3 bg-gradient-to-r from-purple-50 to-pink-50 border border-purple-200 rounded-lg">
-                    <div className="flex items-center mb-2">
-                      <SparklesIcon className="h-4 w-4 text-purple-600 mr-1" />
-                      <span className="text-sm font-medium text-purple-900">AI 추천 태그</span>
+                  <div className="bg-white border-2 border-indigo-100 rounded-xl p-4 shadow-sm">
+                    <div className="flex items-center justify-between mb-3">
+                      <div className="flex items-center space-x-2">
+                        <div className="w-2 h-2 bg-gradient-to-r from-purple-500 to-pink-500 rounded-full animate-pulse"></div>
+                        <span className="text-sm font-semibold text-gray-900">AI 추천 태그</span>
+                        <span className="text-xs bg-purple-100 text-purple-700 px-2 py-1 rounded-full">
+                          {suggestedTags.length}개
+                        </span>
+                      </div>
+                      <button
+                        type="button"
+                        onClick={() => setShowTagSuggestions(false)}
+                        className="text-gray-400 hover:text-gray-600 transition-colors"
+                      >
+                        <svg className="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
+                        </svg>
+                      </button>
                     </div>
                     <div className="flex flex-wrap gap-2">
-                      {suggestedTags.map((tag, index) => (
-                        <div key={index} className="flex items-center">
-                          <button
-                            type="button"
-                            onClick={() => applyTagSuggestion(tag)}
-                            className="inline-flex items-center px-2 py-1 text-xs font-medium rounded-l-md bg-white border border-purple-300 text-purple-700 hover:bg-purple-50"
-                            disabled={watchedTags?.includes(tag)}
-                          >
-                            {watchedTags?.includes(tag) ? '✓' : '+'} #{tag}
-                          </button>
-                          <button
-                            type="button"
-                            onClick={() => removeTagSuggestion(tag)}
-                            className="px-1 py-1 text-xs border border-l-0 border-purple-300 rounded-r-md bg-white text-purple-600 hover:bg-red-50 hover:text-red-600"
-                          >
-                            ×
-                          </button>
-                        </div>
-                      ))}
+                      {suggestedTags.map((tag, index) => {
+                        const isApplied = watchedTags?.includes(tag);
+                        return (
+                          <div key={index} className="group relative">
+                            <button
+                              type="button"
+                              onClick={() => applyTagSuggestion(tag)}
+                              disabled={isApplied}
+                              className={`inline-flex items-center px-3 py-2 text-sm font-medium rounded-lg transition-all duration-200 ${
+                                isApplied
+                                  ? 'bg-green-100 text-green-800 border-2 border-green-200'
+                                  : 'bg-gradient-to-r from-purple-50 to-pink-50 text-purple-700 border-2 border-purple-200 hover:from-purple-100 hover:to-pink-100 hover:shadow-md'
+                              }`}
+                            >
+                              {isApplied ? (
+                                <svg className="h-3 w-3 mr-1" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" />
+                                </svg>
+                              ) : (
+                                <svg className="h-3 w-3 mr-1" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 6v6m0 0v6m0-6h6m-6 0H6" />
+                                </svg>
+                              )}
+                              {tag}
+                            </button>
+                            {!isApplied && (
+                              <button
+                                type="button"
+                                onClick={() => removeTagSuggestion(tag)}
+                                className="absolute -top-1 -right-1 w-5 h-5 bg-red-500 text-white rounded-full text-xs hover:bg-red-600 transition-colors opacity-0 group-hover:opacity-100"
+                              >
+                                ×
+                              </button>
+                            )}
+                          </div>
+                        );
+                      })}
                     </div>
                   </div>
                 )}
 
-                {/* 현재 태그 표시 */}
+                {/* 현재 적용된 태그 - 개선된 디자인 */}
                 {watchedTags && watchedTags.length > 0 && (
-                  <div className="mt-2 flex flex-wrap gap-2">
-                    {watchedTags.map((tag, index) => (
-                      <span
-                        key={index}
-                        className="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-blue-100 text-blue-800"
-                      >
-                        #{tag}
+                  <div className="bg-blue-50 border border-blue-200 rounded-xl p-4">
+                    <div className="flex items-center space-x-2 mb-3">
+                      <div className="p-1 bg-blue-100 rounded-md">
+                        <svg className="h-3 w-3 text-blue-600" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" />
+                        </svg>
+                      </div>
+                      <span className="text-sm font-medium text-blue-900">
+                        적용된 태그 ({watchedTags.length}개)
                       </span>
-                    ))}
+                    </div>
+                    <div className="flex flex-wrap gap-2">
+                      {watchedTags.map((tag, index) => (
+                        <span
+                          key={index}
+                          className="inline-flex items-center px-3 py-1.5 rounded-lg text-sm font-medium bg-white text-blue-800 border border-blue-200 shadow-sm"
+                        >
+                          <span className="w-2 h-2 bg-blue-500 rounded-full mr-2"></span>
+                          {tag}
+                        </span>
+                      ))}
+                    </div>
                   </div>
                 )}
               </div>
@@ -640,11 +706,24 @@ export const CreateNodePage: React.FC = () => {
                 </div>
               )}
 
-              {/* 파일 업로드 */}
-              <div>
-                <label className="block text-sm font-medium text-gray-700 mb-2">
-                  파일 첨부
-                </label>
+              {/* 파일 첨부 섹션 - 개선된 디자인 */}
+              <div className="space-y-4">
+                <div className="bg-gradient-to-br from-emerald-50 via-teal-50 to-cyan-50 border border-emerald-200 rounded-xl p-6">
+                  <div className="flex items-center space-x-3 mb-4">
+                    <div className="p-2 bg-emerald-100 rounded-lg">
+                      <svg className="h-5 w-5 text-emerald-600" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15.172 7l-6.586 6.586a2 2 0 102.828 2.828l6.414-6.586a4 4 0 00-5.656-5.656l-6.415 6.585a6 6 0 108.486 8.486L20.5 13" />
+                      </svg>
+                    </div>
+                    <div>
+                      <label className="text-sm font-semibold text-gray-900">
+                        스마트 파일 첨부
+                      </label>
+                      <p className="text-xs text-gray-600">
+                        PDF, 문서, 이미지 등을 업로드하면 AI가 자동으로 내용을 분석합니다
+                      </p>
+                    </div>
+                  </div>
                 <FileUpload
                   onFileUploaded={(url, fileName, fileType, fileObject) => {
                     // 파일 보안 검증
@@ -695,30 +774,64 @@ export const CreateNodePage: React.FC = () => {
                   multiple={true}
                 />
 
-                {/* 업로드된 파일 목록 표시 */}
-                {uploadedFiles.length > 0 && (
-                  <div className="mt-4">
-                    <h4 className="text-sm font-medium text-gray-700 mb-2">첨부된 파일</h4>
-                    <div className="space-y-3">
+                  {/* 업로드된 파일 목록 표시 */}
+                  {uploadedFiles.length > 0 && (
+                    <div className="mt-6">
+                      <div className="flex items-center space-x-2 mb-4">
+                        <div className="p-1.5 bg-emerald-100 rounded-lg">
+                          <svg className="h-4 w-4 text-emerald-600" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
+                          </svg>
+                        </div>
+                        <h4 className="text-sm font-semibold text-gray-900">첨부된 파일들</h4>
+                        <span className="bg-emerald-100 text-emerald-700 px-2 py-1 rounded-full text-xs font-medium">
+                          {uploadedFiles.length}개 파일
+                        </span>
+                      </div>
+                      <div className="space-y-3">
                       {uploadedFiles.map((file, index) => {
                         const isExpanded = expandedFileSummaries.has(index);
                         const isGenerating = generatingFileSummaries.has(index);
                         const hasSummary = file.summary && file.summary.trim().length > 0;
 
                         return (
-                          <div key={index} className="border border-gray-200 rounded-lg p-4 bg-white">
+                          <div key={index} className="bg-white border border-gray-200 rounded-xl p-5 shadow-sm hover:shadow-md transition-shadow duration-200">
                             {/* 파일 기본 정보 */}
                             <div className="flex items-center justify-between">
-                              <div className="flex items-center space-x-3">
-                                <span className="text-lg">📎</span>
-                                <div>
-                                  <div className="text-sm font-medium text-gray-900">{file.name}</div>
-                                  <div className="text-xs text-gray-500">{file.type}</div>
+                              <div className="flex items-center space-x-4">
+                                <div className="p-2.5 bg-gradient-to-br from-blue-50 to-purple-50 rounded-lg border border-blue-100">
+                                  {file.type === 'application/pdf' ? (
+                                    <svg className="h-6 w-6 text-red-500" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M7 21h10a2 2 0 002-2V9.414a1 1 0 00-.293-.707l-5.414-5.414A1 1 0 0012.586 3H7a2 2 0 00-2 2v14a2 2 0 002 2z" />
+                                    </svg>
+                                  ) : file.type.startsWith('image/') ? (
+                                    <svg className="h-6 w-6 text-green-500" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 16l4.586-4.586a2 2 0 012.828 0L16 16m-2-2l1.586-1.586a2 2 0 012.828 0L20 14m-6-6h.01M6 20h12a2 2 0 002-2V6a2 2 0 00-2-2H6a2 2 0 00-2 2v12a2 2 0 002 2z" />
+                                    </svg>
+                                  ) : (
+                                    <svg className="h-6 w-6 text-blue-500" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
+                                    </svg>
+                                  )}
+                                </div>
+                                <div className="flex-1">
+                                  <div className="text-sm font-semibold text-gray-900 mb-1">{file.name}</div>
+                                  <div className="flex items-center space-x-3 text-xs text-gray-500">
+                                    <span className="bg-gray-100 px-2 py-1 rounded-full font-medium">
+                                      {file.type.split('/')[1]?.toUpperCase() || 'FILE'}
+                                    </span>
+                                    <span className="flex items-center">
+                                      <svg className="h-3 w-3 mr-1" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z" />
+                                      </svg>
+                                      방금 전
+                                    </span>
+                                  </div>
                                 </div>
                                 {isGenerating && (
-                                  <div className="flex items-center text-xs text-blue-600">
+                                  <div className="flex items-center text-xs text-blue-600 bg-blue-50 px-2 py-1 rounded-full">
                                     <div className="animate-spin rounded-full h-3 w-3 border-b-2 border-blue-600 mr-1"></div>
-                                    요약 생성 중...
+                                    요약 생성 중
                                   </div>
                                 )}
                               </div>
@@ -739,68 +852,146 @@ export const CreateNodePage: React.FC = () => {
                                     return newSet;
                                   });
                                 }}
-                                className="text-red-500 hover:text-red-700 text-sm px-2 py-1 rounded hover:bg-red-50 transition-colors"
+                                className="group p-2 text-red-400 hover:text-red-600 hover:bg-red-50 rounded-lg transition-all duration-200"
+                                title="파일 제거"
                               >
-                                제거
+                                <svg className="h-4 w-4 group-hover:scale-110 transition-transform duration-200" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" />
+                                </svg>
                               </button>
                             </div>
 
-                            {/* 파일 요약 섹션 */}
+                            {/* 파일 요약 섹션 - 개선된 UI */}
                             {hasSummary && (
                               <div className="mt-3 pt-3 border-t border-gray-100">
-                                <button
-                                  type="button"
-                                  onClick={() => toggleFileSummaryExpansion(index)}
-                                  className="flex items-center text-sm font-medium text-gray-700 hover:text-gray-900 transition-colors"
-                                >
-                                  {isExpanded ? (
-                                    <ChevronDownIcon className="h-4 w-4 mr-1" />
-                                  ) : (
-                                    <ChevronRightIcon className="h-4 w-4 mr-1" />
-                                  )}
-                                  파일 요약
-                                </button>
-
-                                {isExpanded && (
-                                  <div className="mt-2 p-3 bg-blue-50 rounded-md border-l-4 border-blue-200">
-                                    <p className="text-sm text-gray-700 leading-relaxed">
-                                      {file.summary}
-                                    </p>
+                                <div className="flex items-center justify-between mb-2">
+                                  <div className="flex items-center">
+                                    <SparklesIcon className="h-4 w-4 text-purple-500 mr-1" />
+                                    <span className="text-sm font-medium text-gray-700">AI 요약</span>
                                   </div>
-                                )}
+                                  <button
+                                    type="button"
+                                    onClick={() => toggleFileSummaryExpansion(index)}
+                                    className="flex items-center text-xs text-gray-500 hover:text-gray-700 transition-colors"
+                                  >
+                                    {isExpanded ? (
+                                      <>
+                                        접기 <ChevronDownIcon className="h-3 w-3 ml-1" />
+                                      </>
+                                    ) : (
+                                      <>
+                                        자세히 <ChevronRightIcon className="h-3 w-3 ml-1" />
+                                      </>
+                                    )}
+                                  </button>
+                                </div>
+
+                                {/* 요약 미리보기 (항상 표시) */}
+                                <div className="bg-gradient-to-r from-blue-50 to-purple-50 rounded-lg p-3 border border-blue-100">
+                                  <p className="text-sm text-gray-700 leading-relaxed">
+                                    {isExpanded
+                                      ? file.summary
+                                      : file.summary.length > 150
+                                        ? `${file.summary.substring(0, 150)}...`
+                                        : file.summary
+                                    }
+                                  </p>
+
+                                  {/* 요약 길이가 긴 경우 더보기 표시 */}
+                                  {!isExpanded && file.summary.length > 150 && (
+                                    <button
+                                      type="button"
+                                      onClick={() => toggleFileSummaryExpansion(index)}
+                                      className="mt-2 text-xs text-blue-600 hover:text-blue-800 font-medium transition-colors"
+                                    >
+                                      더 보기 →
+                                    </button>
+                                  )}
+                                </div>
+
+                                {/* 요약 메타데이터 */}
+                                <div className="mt-2 flex items-center justify-between text-xs text-gray-500">
+                                  <span className="flex items-center">
+                                    <svg className="h-3 w-3 mr-1" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 12l2 2 4-4M7.835 4.697a3.42 3.42 0 001.946-.806 3.42 3.42 0 014.438 0 3.42 3.42 0 001.946.806 3.42 3.42 0 013.138 3.138 3.42 3.42 0 00.806 1.946 3.42 3.42 0 010 4.438 3.42 3.42 0 00-.806 1.946 3.42 3.42 0 01-3.138 3.138 3.42 3.42 0 00-1.946.806 3.42 3.42 0 01-4.438 0 3.42 3.42 0 00-1.946-.806 3.42 3.42 0 01-3.138-3.138 3.42 3.42 0 00-.806-1.946 3.42 3.42 0 010-4.438 3.42 3.42 0 00.806-1.946 3.42 3.42 0 013.138-3.138z" />
+                                    </svg>
+                                    AI 자동 생성
+                                  </span>
+                                  <span className="bg-green-100 text-green-700 px-2 py-1 rounded-full text-xs font-medium">
+                                    업로드 시 자동 생성
+                                  </span>
+                                </div>
+                              </div>
+                            )}
+
+                            {/* AI 요약 생성 중 상태 */}
+                            {isGenerating && (
+                              <div className="mt-3 pt-3 border-t border-gray-100">
+                                <div className="bg-gradient-to-r from-blue-50 to-purple-50 rounded-lg p-4 border border-blue-200">
+                                  <div className="flex items-center">
+                                    <div className="animate-spin rounded-full h-5 w-5 border-2 border-blue-500 border-t-transparent mr-3"></div>
+                                    <div className="flex-1">
+                                      <p className="text-sm font-medium text-gray-900">AI 요약 생성 중</p>
+                                      <p className="text-xs text-gray-600 mt-1">
+                                        파일 내용을 분석하고 있습니다...
+                                      </p>
+                                    </div>
+                                  </div>
+
+                                  {/* 진행률 표시 */}
+                                  <div className="mt-3">
+                                    <div className="bg-gray-200 rounded-full h-1.5">
+                                      <div className="bg-gradient-to-r from-blue-500 to-purple-600 h-1.5 rounded-full animate-pulse" style={{width: '60%'}}></div>
+                                    </div>
+                                  </div>
+                                </div>
                               </div>
                             )}
 
                             {/* AI 요약 생성/재생성 버튼 */}
-                            <div className="mt-3 pt-3 border-t border-gray-100">
-                              {!hasSummary && !isGenerating && (
-                                <button
-                                  type="button"
-                                  onClick={() => regenerateFileSummary(index)}
-                                  className="inline-flex items-center px-3 py-1.5 border border-blue-300 text-xs font-medium rounded-md text-blue-700 bg-blue-50 hover:bg-blue-100 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500 transition-colors"
-                                >
-                                  <SparklesIcon className="h-3 w-3 mr-1" />
-                                  AI 요약 생성
-                                </button>
-                              )}
+                            {!hasSummary && !isGenerating && (
+                              <div className="mt-3 pt-3 border-t border-gray-100">
+                                <div className="bg-gray-50 rounded-lg p-3 border border-dashed border-gray-300">
+                                  <div className="text-center">
+                                    <SparklesIcon className="mx-auto h-6 w-6 text-gray-400 mb-2" />
+                                    <p className="text-xs text-gray-600 mb-3">
+                                      AI가 이 파일의 내용을 분석하여 요약을 생성할 수 있습니다
+                                    </p>
+                                    <button
+                                      type="button"
+                                      onClick={() => regenerateFileSummary(index)}
+                                      className="w-full inline-flex items-center justify-center px-3 py-2 border border-transparent text-xs font-medium rounded-md text-white bg-gradient-to-r from-blue-500 to-purple-600 hover:from-blue-600 hover:to-purple-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500 transition-all duration-200 shadow-sm"
+                                    >
+                                      <SparklesIcon className="h-4 w-4 mr-1" />
+                                      AI 요약 생성하기
+                                    </button>
+                                  </div>
+                                </div>
+                              </div>
+                            )}
 
-                              {hasSummary && !isGenerating && (
+                            {/* 요약 재생성 버튼 */}
+                            {hasSummary && !isGenerating && (
+                              <div className="mt-3 pt-3 border-t border-gray-100">
                                 <button
                                   type="button"
                                   onClick={() => regenerateFileSummary(index)}
-                                  className="inline-flex items-center px-3 py-1.5 border border-gray-300 text-xs font-medium rounded-md text-gray-600 bg-gray-50 hover:bg-gray-100 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-gray-500 transition-colors"
+                                  className="w-full inline-flex items-center justify-center px-3 py-2 border border-transparent text-xs font-medium rounded-md text-purple-700 bg-purple-50 hover:bg-purple-100 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-purple-500 transition-all duration-200 group"
                                 >
-                                  <SparklesIcon className="h-3 w-3 mr-1" />
-                                  요약 재생성
+                                  <svg className="h-4 w-4 mr-1 group-hover:rotate-180 transition-transform duration-300" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15" />
+                                  </svg>
+                                  새로운 요약 생성
                                 </button>
-                              )}
-                            </div>
+                              </div>
+                            )}
                           </div>
                         );
                       })}
                     </div>
                   </div>
                 )}
+                </div>
               </div>
 
               {/* 공개 설정 */}
