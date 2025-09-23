@@ -14,6 +14,7 @@ import { useQuery, useQueryClient } from '@tanstack/react-query';
 import { useKnowledgeStore } from '../../stores/knowledge.store';
 import { knowledgeService } from '../../services/knowledge.service';
 import { SampleDataGenerator } from '../../utils/sampleData';
+import { KnowledgeListSkeleton } from '../../components/ui/SkeletonLoader';
 
 // 노드 타입별 아이콘 매핑 (PDF 요구사항)
 const getNodeTypeIcon = (nodeType: string) => {
@@ -357,20 +358,8 @@ export const KnowledgePage: React.FC = () => {
       )}
 
       {/* Node grid */}
-      {!error && loading ? (
-        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-          {[...Array(6)].map((_, i) => (
-            <div key={i} className="bg-white p-6 rounded-lg shadow animate-pulse">
-              <div className="h-4 bg-gray-200 rounded w-3/4 mb-4"></div>
-              <div className="h-3 bg-gray-200 rounded w-full mb-2"></div>
-              <div className="h-3 bg-gray-200 rounded w-2/3 mb-4"></div>
-              <div className="flex space-x-2">
-                <div className="h-5 bg-gray-200 rounded w-12"></div>
-                <div className="h-5 bg-gray-200 rounded w-16"></div>
-              </div>
-            </div>
-          ))}
-        </div>
+      {!error && isLoading ? (
+        <KnowledgeListSkeleton count={6} />
       ) : allNodes.length > 0 ? (
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
           {allNodes.map((node) => (

@@ -17,6 +17,7 @@ import { searchService } from '../services/search.service';
 // Import optimized query keys and options
 import { QUERY_KEYS, getQueryOptions, prefetchQueries } from '../lib/queryClient';
 import { EmbeddingStatsCard } from '../components/dashboard/EmbeddingStatsCard';
+import { DashboardSkeleton } from '../components/ui/SkeletonLoader';
 
 export const DashboardPage: React.FC = () => {
   const { user } = useAuthStore();
@@ -282,21 +283,7 @@ export const DashboardPage: React.FC = () => {
             <div className="divide-y divide-neutral-100">
               {nodesLoading ? (
                 <div className="p-6">
-                  <div className="space-y-4">
-                    {[...Array(3)].map((_, i) => (
-                      <div key={i} className="flex space-x-4">
-                        <div className="skeleton h-12 w-12 rounded-xl"></div>
-                        <div className="flex-1 space-y-2">
-                          <div className="skeleton h-4 rounded w-3/4"></div>
-                          <div className="skeleton h-3 rounded w-1/2"></div>
-                          <div className="flex space-x-2">
-                            <div className="skeleton h-5 w-16 rounded-full"></div>
-                            <div className="skeleton h-5 w-12 rounded-full"></div>
-                          </div>
-                        </div>
-                      </div>
-                    ))}
-                  </div>
+                  <DashboardSkeleton />
                 </div>
               ) : recentNodes?.nodes?.length ? (
                 recentNodes.nodes.map((node, index) => (

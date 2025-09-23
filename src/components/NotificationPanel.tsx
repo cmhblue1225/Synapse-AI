@@ -12,20 +12,9 @@ import {
   XMarkIcon
 } from '@heroicons/react/24/outline';
 import { useAuthStore } from '../stores/auth.store';
+import { notificationService, type NotificationWithSender } from '../services/notification.service';
+import { toast } from 'react-toastify';
 
-interface Notification {
-  id: string;
-  type: 'node_shared' | 'comment_added' | 'node_liked' | 'relationship_created' | 'mention' | 'system_update';
-  title: string;
-  message: string;
-  relatedNodeId?: string;
-  relatedCommentId?: string;
-  senderId?: string;
-  senderName?: string;
-  isRead: boolean;
-  createdAt: string;
-  metadata?: any;
-}
 
 interface NotificationPanelProps {
   isOpen: boolean;
@@ -38,65 +27,83 @@ export const NotificationPanel: React.FC<NotificationPanelProps> = ({ isOpen, on
   const { user } = useAuthStore();
   const queryClient = useQueryClient();
 
-  // Mock notification data - 실제로는 API에서 가져와야 함
-  const mockNotifications: Notification[] = [
-    {
-      id: '1',
-      type: 'node_shared',
-      title: '새 노드가 공유되었습니다',
-      message: '김민수님이 "React 최적화 가이드" 노드를 공유했습니다.',
-      relatedNodeId: 'node-123',
-      senderId: 'user-456',
-      senderName: '김민수',
-      isRead: false,
-      createdAt: '2024-01-15T10:30:00Z'
-    },
-    {
-      id: '2',
-      type: 'comment_added',
-      title: '새 댓글이 추가되었습니다',
-      message: '"JavaScript ES6+ 문법" 노드에 새 댓글이 있습니다.',
-      relatedNodeId: 'node-789',
-      relatedCommentId: 'comment-111',
-      senderId: 'user-222',
-      senderName: '이영희',
-      isRead: false,
-      createdAt: '2024-01-15T09:15:00Z'
-    },
-    {
-      id: '3',
-      type: 'relationship_created',
-      title: '새 관계가 생성되었습니다',
-      message: '"AI 기반 검색"과 "머신러닝" 노드가 연결되었습니다.',
-      relatedNodeId: 'node-333',
-      isRead: true,
-      createdAt: '2024-01-14T16:45:00Z'
-    },
-    {
-      id: '4',
-      type: 'system_update',
-      title: '시스템 업데이트',
-      message: '새로운 AI 기능이 추가되었습니다. 지금 확인해보세요!',
-      isRead: true,
-      createdAt: '2024-01-14T08:00:00Z'
-    },
-    {
-      id: '5',
-      type: 'mention',
-      title: '멘션되었습니다',
-      message: '박지성님이 "팀 프로젝트 계획"에서 회원님을 언급했습니다.',
-      relatedNodeId: 'node-555',
-      senderId: 'user-666',
-      senderName: '박지성',
-      isRead: false,
-      createdAt: '2024-01-13T14:20:00Z'
-    }
-  ];
+  // 알림 조회 쿼리
+  const { data: notifications = [], isLoading, error } = useQuery({
+    queryKey: ['notifications', user?.id],
+    queryFn: () => notificationService.getUserNotifications(user!.id, 20),
+    enabled: !!user?.id && isOpen,
+    refetchInterval: 30000, // 30초마다 갱신
+  });
 
-  const [notifications, setNotifications] = useState<Notification[]>(mockNotifications);
+  // 읽지 않은 알림 개수 조회
+  const { data: unreadCount = 0 } = useQuery({
+    queryKey: ['notifications-unread-count', user?.id],
+    queryFn: () => notificationService.getUnreadCount(user!.id),
+    enabled: !!user?.id,
+    refetchInterval: 30000,
+  });
+
+  // 알림 읽음 처리 뮤테이션
+  const markAsReadMutation = useMutation({
+    mutationFn: notificationService.markAsRead,
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['notifications', user?.id] });
+      queryClient.invalidateQueries({ queryKey: ['notifications-unread-count', user?.id] });
+    },
+    onError: (error) => {
+      console.error('알림 읽음 처리 실패:', error);
+      toast.error('알림 읽음 처리에 실패했습니다.');
+    },
+  });
+
+  // 모든 알림 읽음 처리 뮤테이션
+  const markAllAsReadMutation = useMutation({
+    mutationFn: () => notificationService.markAllAsRead(user!.id),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['notifications', user?.id] });
+      queryClient.invalidateQueries({ queryKey: ['notifications-unread-count', user?.id] });
+      toast.success('모든 알림을 읽음으로 처리했습니다.');
+    },
+    onError: (error) => {
+      console.error('모든 알림 읽음 처리 실패:', error);
+      toast.error('알림 읽음 처리에 실패했습니다.');
+    },
+  });
+
+  // 알림 삭제 뮤테이션
+  const deleteNotificationMutation = useMutation({
+    mutationFn: notificationService.deleteNotification,
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['notifications', user?.id] });
+      queryClient.invalidateQueries({ queryKey: ['notifications-unread-count', user?.id] });
+    },
+    onError: (error) => {
+      console.error('알림 삭제 실패:', error);
+      toast.error('알림 삭제에 실패했습니다.');
+    },
+  });
+
+  // 실시간 알림 구독
+  useEffect(() => {
+    if (!user?.id || !isOpen) return;
+
+    const unsubscribe = notificationService.subscribeToNotifications(
+      user.id,
+      (newNotification) => {
+        // 새 알림이 오면 쿼리 무효화하여 최신 데이터 가져오기
+        queryClient.invalidateQueries({ queryKey: ['notifications', user.id] });
+        queryClient.invalidateQueries({ queryKey: ['notifications-unread-count', user.id] });
+
+        // 토스트 알림 표시
+        toast.info(`새 알림: ${newNotification.title}`);
+      }
+    );
+
+    return unsubscribe;
+  }, [user?.id, isOpen, queryClient]);
 
   // 알림 아이콘 가져오기
-  const getNotificationIcon = (type: Notification['type']) => {
+  const getNotificationIcon = (type: NotificationWithSender['type']) => {
     const iconProps = { className: "h-5 w-5" };
 
     switch (type) {
@@ -118,45 +125,29 @@ export const NotificationPanel: React.FC<NotificationPanelProps> = ({ isOpen, on
   };
 
   // 알림 클릭 처리
-  const handleNotificationClick = (notification: Notification) => {
+  const handleNotificationClick = (notification: NotificationWithSender) => {
     // 읽음 처리
-    if (!notification.isRead) {
-      markAsRead(notification.id);
+    if (!notification.is_read) {
+      markAsReadMutation.mutate(notification.id);
     }
 
     // 관련 페이지로 이동
-    if (notification.relatedNodeId) {
-      navigate(`/app/knowledge/${notification.relatedNodeId}`);
+    if (notification.related_node_id) {
+      navigate(`/app/knowledge/${notification.related_node_id}`);
       onClose();
     }
   };
 
-  // 개별 알림 읽음 처리
-  const markAsRead = (notificationId: string) => {
-    setNotifications(prev =>
-      prev.map(notif =>
-        notif.id === notificationId
-          ? { ...notif, isRead: true }
-          : notif
-      )
-    );
-    // 실제로는 API 호출 필요
-  };
-
   // 모든 알림 읽음 처리
-  const markAllAsRead = () => {
-    setNotifications(prev =>
-      prev.map(notif => ({ ...notif, isRead: true }))
-    );
-    // 실제로는 API 호출 필요
+  const handleMarkAllAsRead = () => {
+    if (unreadCount > 0) {
+      markAllAsReadMutation.mutate();
+    }
   };
 
   // 알림 삭제
-  const deleteNotification = (notificationId: string) => {
-    setNotifications(prev =>
-      prev.filter(notif => notif.id !== notificationId)
-    );
-    // 실제로는 API 호출 필요
+  const handleDeleteNotification = (notificationId: string) => {
+    deleteNotificationMutation.mutate(notificationId);
   };
 
   // 시간 포맷팅
@@ -188,8 +179,6 @@ export const NotificationPanel: React.FC<NotificationPanelProps> = ({ isOpen, on
     };
   }, [isOpen, onClose]);
 
-  const unreadCount = notifications.filter(n => !n.isRead).length;
-
   if (!isOpen) return null;
 
   return (
@@ -209,10 +198,11 @@ export const NotificationPanel: React.FC<NotificationPanelProps> = ({ isOpen, on
           <div className="flex items-center space-x-2">
             {unreadCount > 0 && (
               <button
-                onClick={markAllAsRead}
-                className="text-xs text-primary-600 hover:text-primary-700 font-medium"
+                onClick={handleMarkAllAsRead}
+                disabled={markAllAsReadMutation.isPending}
+                className="text-xs text-primary-600 hover:text-primary-700 font-medium disabled:opacity-50"
               >
-                모두 읽음
+                {markAllAsReadMutation.isPending ? '처리 중...' : '모두 읽음'}
               </button>
             )}
             <Link
@@ -234,13 +224,28 @@ export const NotificationPanel: React.FC<NotificationPanelProps> = ({ isOpen, on
 
       {/* Notifications List */}
       <div className="max-h-80 overflow-y-auto">
-        {notifications.length > 0 ? (
+        {isLoading ? (
+          // 로딩 상태
+          <div className="px-4 py-8 text-center">
+            <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-primary-600 mx-auto"></div>
+            <p className="mt-2 text-sm text-gray-500">알림을 불러오는 중...</p>
+          </div>
+        ) : error ? (
+          // 에러 상태
+          <div className="px-4 py-8 text-center">
+            <ExclamationTriangleIcon className="mx-auto h-12 w-12 text-red-400" />
+            <h3 className="mt-2 text-sm font-medium text-gray-900">알림을 불러올 수 없습니다</h3>
+            <p className="mt-1 text-sm text-gray-500">
+              잠시 후 다시 시도해주세요.
+            </p>
+          </div>
+        ) : notifications.length > 0 ? (
           <div className="divide-y divide-gray-200">
             {notifications.map((notification) => (
               <div
                 key={notification.id}
-                className={`px-4 py-3 hover:bg-gray-50 cursor-pointer transition-colors ${
-                  !notification.isRead ? 'bg-blue-50' : ''
+                className={`px-4 py-3 hover:bg-gray-50 cursor-pointer transition-colors group ${
+                  !notification.is_read ? 'bg-blue-50' : ''
                 }`}
                 onClick={() => handleNotificationClick(notification)}
               >
@@ -251,36 +256,39 @@ export const NotificationPanel: React.FC<NotificationPanelProps> = ({ isOpen, on
                   <div className="flex-1 min-w-0">
                     <div className="flex items-start justify-between">
                       <div className="flex-1">
-                        <p className={`text-sm ${!notification.isRead ? 'font-medium text-gray-900' : 'text-gray-900'}`}>
+                        <p className={`text-sm ${!notification.is_read ? 'font-medium text-gray-900' : 'text-gray-900'}`}>
                           {notification.title}
                         </p>
-                        <p className={`text-xs mt-1 ${!notification.isRead ? 'text-gray-700' : 'text-gray-600'}`}>
+                        <p className={`text-xs mt-1 ${!notification.is_read ? 'text-gray-700' : 'text-gray-600'}`}>
                           {notification.message}
                         </p>
                         <div className="flex items-center mt-2 space-x-2">
                           <span className="text-xs text-gray-500">
-                            {formatTime(notification.createdAt)}
+                            {formatTime(notification.created_at)}
                           </span>
-                          {notification.senderName && (
+                          {notification.sender && (
                             <>
                               <span className="text-xs text-gray-400">•</span>
                               <span className="text-xs text-gray-500">
-                                {notification.senderName}
+                                {notification.sender.first_name || notification.sender.last_name
+                                  ? `${notification.sender.first_name || ''} ${notification.sender.last_name || ''}`.trim()
+                                  : '익명'}
                               </span>
                             </>
                           )}
                         </div>
                       </div>
                       <div className="flex-shrink-0 ml-2">
-                        {!notification.isRead && (
+                        {!notification.is_read && (
                           <div className="w-2 h-2 bg-blue-600 rounded-full"></div>
                         )}
                         <button
                           onClick={(e) => {
                             e.stopPropagation();
-                            deleteNotification(notification.id);
+                            handleDeleteNotification(notification.id);
                           }}
-                          className="mt-1 p-1 text-gray-400 hover:text-gray-600 opacity-0 group-hover:opacity-100 transition-opacity"
+                          disabled={deleteNotificationMutation.isPending}
+                          className="mt-1 p-1 text-gray-400 hover:text-gray-600 opacity-0 group-hover:opacity-100 transition-opacity disabled:opacity-50"
                         >
                           <XMarkIcon className="h-3 w-3" />
                         </button>

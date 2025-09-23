@@ -1,5 +1,6 @@
 import { supabase } from '../lib/supabase'
 import type { Database } from '../lib/supabase'
+import { notificationService } from './notification.service'
 
 export type KnowledgeNode = Database['public']['Tables']['knowledge_nodes']['Row']
 export type InsertKnowledgeNode = Database['public']['Tables']['knowledge_nodes']['Insert']
@@ -304,6 +305,36 @@ export class KnowledgeService {
     }
 
     console.log('✅ Relationship created successfully:', data)
+
+    // 관계 생성 알림 생성 (비동기 처리 - 실패해도 메인 기능에 영향 없음)
+    try {
+      // 노드 소유자들에게 알림 생성 (자기 자신 제외)
+      if (sourceNode.user_id !== user.id) {
+        await notificationService.createRelationshipNotification(
+          sourceNode.user_id,
+          user.id,
+          params.sourceNodeId,
+          params.targetNodeId,
+          sourceNode.title,
+          targetNode.title
+        );
+      }
+
+      if (targetNode.user_id !== user.id && targetNode.user_id !== sourceNode.user_id) {
+        await notificationService.createRelationshipNotification(
+          targetNode.user_id,
+          user.id,
+          params.sourceNodeId,
+          params.targetNodeId,
+          sourceNode.title,
+          targetNode.title
+        );
+      }
+    } catch (notificationError) {
+      console.warn('관계 생성 알림 전송 실패:', notificationError);
+      // 알림 실패는 주 기능에 영향을 주지 않으므로 조용히 처리
+    }
+
     return data
   }
 

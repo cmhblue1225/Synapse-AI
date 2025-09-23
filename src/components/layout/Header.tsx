@@ -1,9 +1,11 @@
 import React, { useState } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
+import { useQuery } from '@tanstack/react-query';
 import { useAuthStore } from '../../stores/auth.store';
 import { useSearchStore } from '../../stores/search.store';
 import { MagnifyingGlassIcon, BellIcon, UserCircleIcon, ChevronDownIcon } from '@heroicons/react/24/outline';
 import { NotificationPanel } from '../NotificationPanel';
+import { notificationService } from '../../services/notification.service';
 
 export const Header: React.FC = () => {
   const navigate = useNavigate();
@@ -13,6 +15,14 @@ export const Header: React.FC = () => {
   const [showSuggestions, setShowSuggestions] = useState(false);
   const [showUserMenu, setShowUserMenu] = useState(false);
   const [showNotifications, setShowNotifications] = useState(false);
+
+  // 읽지 않은 알림 개수 조회
+  const { data: unreadCount = 0 } = useQuery({
+    queryKey: ['notifications-unread-count', user?.id],
+    queryFn: () => notificationService.getUnreadCount(user!.id),
+    enabled: !!user?.id,
+    refetchInterval: 30000, // 30초마다 갱신
+  });
 
   const handleSearch = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -122,9 +132,13 @@ export const Header: React.FC = () => {
               className="relative p-3 text-neutral-600 hover:text-primary-600 hover:bg-primary-50 rounded-xl transition-all duration-200 group"
             >
               <BellIcon className="h-6 w-6 group-hover:animate-bounce" />
-              <div className="absolute -top-1 -right-1 w-5 h-5 bg-gradient-to-r from-error-500 to-error-600 rounded-full flex items-center justify-center animate-pulse">
-                <span className="text-xs font-bold text-white">3</span>
-              </div>
+              {unreadCount > 0 && (
+                <div className="absolute -top-1 -right-1 w-5 h-5 bg-gradient-to-r from-error-500 to-error-600 rounded-full flex items-center justify-center animate-pulse">
+                  <span className="text-xs font-bold text-white">
+                    {unreadCount > 99 ? '99+' : unreadCount}
+                  </span>
+                </div>
+              )}
             </button>
 
             {/* Notification Panel */}

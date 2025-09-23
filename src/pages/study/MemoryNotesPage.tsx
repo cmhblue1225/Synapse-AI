@@ -139,6 +139,12 @@ ${combinedContent}
           cleanResponse = cleanResponse.replace(/```\s*/, '').replace(/```\s*$/, '');
         }
 
+        // JSON 객체 추출 (더 안전한 방법)
+        const jsonMatch = cleanResponse.match(/\{[\s\S]*\}/);
+        if (jsonMatch) {
+          cleanResponse = jsonMatch[0];
+        }
+
         noteData = JSON.parse(cleanResponse);
       } catch (parseError) {
         console.error('JSON 파싱 실패:', parseError, 'Response:', response);
@@ -160,7 +166,12 @@ ${combinedContent}
 
       const memoryNote: MemoryNote = {
         id: Date.now().toString(),
-        ...noteData,
+        title: noteData.title || (selectedNodes[0]?.title + ' 암기 노트'),
+        summary: noteData.summary || '요약이 생성되지 않았습니다.',
+        keyPoints: noteData.keyPoints || [],
+        details: noteData.details || [],
+        mnemonics: noteData.mnemonics || [],
+        reviewQuestions: noteData.reviewQuestions || [],
         createdAt: new Date()
       };
 
@@ -321,7 +332,7 @@ ${combinedContent}
               </section>
 
               {/* 핵심 포인트 */}
-              {generatedNote.keyPoints.length > 0 && (
+              {generatedNote.keyPoints && generatedNote.keyPoints.length > 0 && (
                 <section>
                   <h2 className="text-lg font-semibold text-gray-900 mb-3">
                     🎯 핵심 포인트
@@ -340,7 +351,7 @@ ${combinedContent}
               )}
 
               {/* 상세 내용 */}
-              {generatedNote.details.length > 0 && (
+              {generatedNote.details && generatedNote.details.length > 0 && (
                 <section>
                   <h2 className="text-lg font-semibold text-gray-900 mb-4">
                     📚 상세 내용
@@ -385,7 +396,7 @@ ${combinedContent}
               )}
 
               {/* 암기법 */}
-              {generatedNote.mnemonics.length > 0 && (
+              {generatedNote.mnemonics && generatedNote.mnemonics.length > 0 && (
                 <section>
                   <h2 className="text-lg font-semibold text-gray-900 mb-4">
                     🧠 암기법
@@ -405,7 +416,7 @@ ${combinedContent}
               )}
 
               {/* 복습 문제 */}
-              {generatedNote.reviewQuestions.length > 0 && (
+              {generatedNote.reviewQuestions && generatedNote.reviewQuestions.length > 0 && (
                 <section>
                   <h2 className="text-lg font-semibold text-gray-900 mb-4">
                     ❓ 복습 문제

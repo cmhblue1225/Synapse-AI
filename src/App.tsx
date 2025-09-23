@@ -51,6 +51,9 @@ import { QuizHistoryPage } from './pages/study/QuizHistoryPage';
 // Protected Route component
 import { ProtectedRoute } from './components/auth/ProtectedRoute';
 
+// Error Boundary component
+import { ErrorBoundary, RouteErrorBoundary } from './components/ErrorBoundary';
+
 // Styles
 import 'react-toastify/dist/ReactToastify.css';
 
@@ -81,66 +84,79 @@ function App() {
   }, []);
 
   return (
-    <QueryClientProvider client={queryClient}>
-      <Router>
-        <div className="min-h-screen bg-gray-50">
-          <Routes>
-            {/* Public routes */}
-            <Route path="/" element={<HomePage />} />
-            
-            {/* Auth routes */}
-            <Route path="/auth" element={<AuthLayout />}>
-              <Route path="login" element={<LoginPage />} />
-              <Route path="register" element={<RegisterPage />} />
-              <Route index element={<Navigate to="/auth/login" replace />} />
-            </Route>
+    <ErrorBoundary>
+      <QueryClientProvider client={queryClient}>
+        <Router>
+          <div className="min-h-screen bg-gray-50">
+            <Routes>
+              {/* Public routes */}
+              <Route path="/" element={
+                <RouteErrorBoundary>
+                  <HomePage />
+                </RouteErrorBoundary>
+              } />
 
-            {/* Protected routes */}
-            <Route path="/app" element={<ProtectedRoute><Layout /></ProtectedRoute>}>
-              <Route index element={<DashboardPage />} />
-              <Route path="dashboard" element={<DashboardPage />} />
+              {/* Auth routes */}
+              <Route path="/auth" element={
+                <RouteErrorBoundary>
+                  <AuthLayout />
+                </RouteErrorBoundary>
+              }>
+                <Route path="login" element={<LoginPage />} />
+                <Route path="register" element={<RegisterPage />} />
+                <Route index element={<Navigate to="/auth/login" replace />} />
+              </Route>
 
-              {/* Search routes */}
-              <Route path="search" element={<SearchPage />} />
+              {/* Protected routes */}
+              <Route path="/app" element={
+                <RouteErrorBoundary>
+                  <ProtectedRoute><Layout /></ProtectedRoute>
+                </RouteErrorBoundary>
+              }>
+                <Route index element={<DashboardPage />} />
+                <Route path="dashboard" element={<DashboardPage />} />
 
-              {/* Knowledge routes */}
-              <Route path="knowledge" element={<KnowledgePage />} />
-              <Route path="knowledge/create" element={<CreateNodePage />} />
-              <Route path="knowledge/:nodeId" element={<NodeDetailPage />} />
-              <Route path="knowledge/:nodeId/edit" element={<EditNodePage />} />
+                {/* Search routes */}
+                <Route path="search" element={<SearchPage />} />
 
-              {/* Graph visualization route */}
-              <Route path="graph" element={<GraphPage />} />
+                {/* Knowledge routes */}
+                <Route path="knowledge" element={<KnowledgePage />} />
+                <Route path="knowledge/create" element={<CreateNodePage />} />
+                <Route path="knowledge/:nodeId" element={<NodeDetailPage />} />
+                <Route path="knowledge/:nodeId/edit" element={<EditNodePage />} />
 
-              {/* AI Chat route */}
-              <Route path="ai-chat" element={<AIChatPage />} />
+                {/* Graph visualization route */}
+                <Route path="graph" element={<GraphPage />} />
 
-              {/* Statistics route */}
-              <Route path="stats" element={<StatsPage />} />
+                {/* AI Chat route */}
+                <Route path="ai-chat" element={<AIChatPage />} />
 
-              {/* Tags management route */}
-              <Route path="tags" element={<TagsPage />} />
+                {/* Statistics route */}
+                <Route path="stats" element={<StatsPage />} />
 
-              {/* Settings route */}
-              <Route path="settings" element={<SettingsPage />} />
+                {/* Tags management route */}
+                <Route path="tags" element={<TagsPage />} />
 
-              {/* Study activity routes */}
-              <Route path="study" element={<StudyActivitiesPage />} />
-              <Route path="study/memory-notes" element={<MemoryNotesPage />} />
-              <Route path="study/flashcards" element={<FlashcardsPage />} />
-              <Route path="study/quiz" element={<QuizPage />} />
-              <Route path="study/quiz/results" element={<QuizResultsPage />} />
-              <Route path="study/quiz/history" element={<QuizHistoryPage />} />
-              <Route path="study/concept-map" element={<ConceptMapPage />} />
-              <Route path="study/ai-feedback" element={<AIFeedbackPage />} />
+                {/* Settings route */}
+                <Route path="settings" element={<SettingsPage />} />
 
-              {/* Profile routes */}
-              <Route path="profile" element={<ProfilePage />} />
-            </Route>
+                {/* Study activity routes */}
+                <Route path="study" element={<StudyActivitiesPage />} />
+                <Route path="study/memory-notes" element={<MemoryNotesPage />} />
+                <Route path="study/flashcards" element={<FlashcardsPage />} />
+                <Route path="study/quiz" element={<QuizPage />} />
+                <Route path="study/quiz/results" element={<QuizResultsPage />} />
+                <Route path="study/quiz/history" element={<QuizHistoryPage />} />
+                <Route path="study/concept-map" element={<ConceptMapPage />} />
+                <Route path="study/ai-feedback" element={<AIFeedbackPage />} />
 
-            {/* 404 route */}
-            <Route path="*" element={<NotFoundPage />} />
-          </Routes>
+                {/* Profile routes */}
+                <Route path="profile" element={<ProfilePage />} />
+              </Route>
+
+              {/* 404 route */}
+              <Route path="*" element={<NotFoundPage />} />
+            </Routes>
 
           {/* Toast notifications */}
           <ToastContainer
@@ -155,18 +171,19 @@ function App() {
             pauseOnHover
             theme="light"
           />
-        </div>
-      </Router>
+          </div>
+        </Router>
 
-      {/* React Query DevTools */}
-      <ReactQueryDevtools initialIsOpen={false} />
+        {/* React Query DevTools */}
+        <ReactQueryDevtools initialIsOpen={false} />
 
-      {/* Global Search Modal */}
-      <GlobalSearchModal
-        isOpen={isSearchModalOpen}
-        onClose={() => setIsSearchModalOpen(false)}
-      />
-    </QueryClientProvider>
+        {/* Global Search Modal */}
+        <GlobalSearchModal
+          isOpen={isSearchModalOpen}
+          onClose={() => setIsSearchModalOpen(false)}
+        />
+      </QueryClientProvider>
+    </ErrorBoundary>
   );
 }
 
