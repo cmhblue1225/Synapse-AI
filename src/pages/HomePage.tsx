@@ -1,8 +1,29 @@
-import React from 'react';
-import { Link } from 'react-router-dom';
+import React, { useState } from 'react';
+import { Link, useNavigate } from 'react-router-dom';
 import { ArrowRightIcon, MagnifyingGlassIcon, BookOpenIcon, ShareIcon } from '@heroicons/react/24/outline';
+import { authService } from '../services/auth.service';
+import { toast } from 'react-toastify';
 
 export const HomePage: React.FC = () => {
+  const navigate = useNavigate();
+  const [isTestLoginLoading, setIsTestLoginLoading] = useState(false);
+
+  const handleTestLogin = async () => {
+    setIsTestLoginLoading(true);
+    try {
+      await authService.login({
+        email: 'test@test.com',
+        password: 'test1234'
+      });
+      toast.success('테스트 계정으로 로그인되었습니다!');
+      navigate('/app/dashboard');
+    } catch (error: any) {
+      toast.error(error.message || '테스트 계정 로그인에 실패했습니다.');
+      console.error('Test login error:', error);
+    } finally {
+      setIsTestLoginLoading(false);
+    }
+  };
   return (
     <div className="min-h-screen bg-gradient-to-br from-primary-50 to-secondary-50">
       {/* Navigation */}
@@ -24,6 +45,13 @@ export const HomePage: React.FC = () => {
             >
               로그인
             </Link>
+            <button
+              onClick={handleTestLogin}
+              disabled={isTestLoginLoading}
+              className="whitespace-nowrap bg-gradient-to-r from-orange-500 to-orange-600 border border-transparent rounded-md py-2 px-4 text-base font-medium text-white hover:from-orange-600 hover:to-orange-700 shadow-lg hover:shadow-xl transform hover:scale-105 transition-all duration-200 disabled:opacity-50 disabled:cursor-not-allowed disabled:transform-none"
+            >
+              {isTestLoginLoading ? '로그인 중...' : '🎯 테스트계정 로그인'}
+            </button>
             <Link
               to="/auth/register"
               className="whitespace-nowrap bg-primary-600 border border-transparent rounded-md py-2 px-4 text-base font-medium text-white hover:bg-primary-700"
@@ -55,7 +83,7 @@ export const HomePage: React.FC = () => {
           당신의 아이디어, 노트, 문서들을 지능적으로 연결하여 
           새로운 통찰을 발견하세요.
         </p>
-        <div className="mt-10 flex justify-center gap-x-6">
+        <div className="mt-10 flex flex-wrap justify-center gap-4">
           <Link
             to="/auth/register"
             className="group inline-flex items-center justify-center rounded-full py-3 px-6 text-sm font-semibold focus:outline-none focus-visible:outline-2 focus-visible:outline-offset-2 bg-primary-600 text-white hover:bg-primary-700 focus-visible:outline-primary-600 active:bg-primary-800 active:text-primary-100"
@@ -69,6 +97,25 @@ export const HomePage: React.FC = () => {
           >
             로그인
           </Link>
+          <button
+            onClick={handleTestLogin}
+            disabled={isTestLoginLoading}
+            className="group inline-flex items-center justify-center rounded-full py-3 px-6 text-sm font-semibold focus:outline-none focus-visible:outline-2 focus-visible:outline-offset-2 bg-gradient-to-r from-orange-500 to-orange-600 text-white hover:from-orange-600 hover:to-orange-700 shadow-lg hover:shadow-xl transform hover:scale-105 transition-all duration-200 disabled:opacity-50 disabled:cursor-not-allowed disabled:transform-none ring-2 ring-orange-300"
+          >
+            {isTestLoginLoading ? (
+              <>
+                <svg className="animate-spin -ml-1 mr-2 h-4 w-4 text-white" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
+                  <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"></circle>
+                  <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
+                </svg>
+                로그인 중...
+              </>
+            ) : (
+              <>
+                🎯 테스트계정으로 로그인
+              </>
+            )}
+          </button>
         </div>
       </div>
 
