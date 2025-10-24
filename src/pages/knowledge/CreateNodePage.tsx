@@ -301,6 +301,7 @@ export const CreateNodePage: React.FC = () => {
         // 자동 AI 기능 실행 (백그라운드에서 실행)
         const executeAIFeatures = async () => {
           try {
+            console.log('🔄 자동 AI 기능 실행 시작 - 노드 ID:', result.id);
             console.log('🔄 자동 임베딩 생성 중...');
             const embeddingService = await import('../../services/embedding.service');
 
@@ -324,10 +325,12 @@ export const CreateNodePage: React.FC = () => {
             );
 
             console.log('✅ 자동 임베딩 생성 완료');
+            console.log('🔗 다음 단계: 자동 링크 생성 프로세스 시작');
 
             // 🔗 자동 링크 생성 (임베딩 생성 후)
             try {
               console.log('🔗 자동 링크 추천 및 생성 시작...');
+              console.log('📊 검색 조건: limit=10, similarity_threshold=0.6');
 
               // 유사한 노드 찾기
               const similarNodes = await embeddingService.embeddingService.findSimilarNodes(result.id, {
@@ -336,8 +339,11 @@ export const CreateNodePage: React.FC = () => {
                 exclude_self: true
               });
 
+              console.log('🔍 유사 노드 검색 결과:', similarNodes);
+
               if (similarNodes && similarNodes.length > 0) {
                 console.log(`✅ ${similarNodes.length}개의 유사한 노드 발견`);
+                console.log('📋 발견된 노드 목록:', similarNodes.map(n => ({ id: n.id, title: n.title, similarity: n.similarity })));
 
                 // 기존 관계 확인
                 const existingRelationships = await knowledgeService.getNodeRelationships(result.id);
@@ -353,11 +359,18 @@ export const CreateNodePage: React.FC = () => {
                   });
                 }
 
+                console.log('🔗 기존 관계 노드 IDs:', Array.from(existingTargetIds));
+
                 // 자동으로 모든 추천 링크 생성
                 let createdLinksCount = 0;
                 for (const node of similarNodes) {
                   // 이미 관계가 있는 노드는 제외
-                  if (existingTargetIds.has(node.id)) continue;
+                  if (existingTargetIds.has(node.id)) {
+                    console.log(`⏭️ "${node.title}" - 이미 관계 존재, 건너뜀`);
+                    continue;
+                  }
+
+                  console.log(`🔗 "${node.title}"와(과) 링크 생성 시도 중...`);
 
                   try {
                     await knowledgeService.createRelationship({
@@ -381,6 +394,9 @@ export const CreateNodePage: React.FC = () => {
                 }
               } else {
                 console.log('ℹ️ 연결할 유사한 노드가 없습니다');
+                console.log('📊 similarNodes 값:', similarNodes);
+                console.log('📊 similarNodes 타입:', typeof similarNodes);
+                console.log('📊 similarNodes 길이:', similarNodes?.length);
                 toast.success('지식 노드가 생성되고 AI 검색이 활성화되었습니다!');
               }
             } catch (linkError) {

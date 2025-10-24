@@ -293,7 +293,7 @@ export const KnowledgePage: React.FC = () => {
             <select
               value={selectedNodeType}
               onChange={(e) => setSelectedNodeType(e.target.value)}
-              className="block p-2 border border-gray-300 rounded-md focus:ring-primary-500 focus:border-primary-500"
+              className="block px-4 py-2 pr-10 border border-gray-300 rounded-md focus:ring-primary-500 focus:border-primary-500 min-w-[140px]"
             >
               <option value="">모든 타입</option>
               <option value="Note">노트</option>
@@ -309,7 +309,7 @@ export const KnowledgePage: React.FC = () => {
             <select
               value={sortOrder}
               onChange={(e) => setSortOrder(e.target.value)}
-              className="block p-2 border border-gray-300 rounded-md focus:ring-primary-500 focus:border-primary-500"
+              className="block px-4 py-2 pr-10 border border-gray-300 rounded-md focus:ring-primary-500 focus:border-primary-500 min-w-[150px]"
             >
               <option value="updatedAt">최근 수정순</option>
               <option value="createdAt">최근 생성순</option>
