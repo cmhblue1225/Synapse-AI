@@ -324,7 +324,70 @@ export const CreateNodePage: React.FC = () => {
             );
 
             console.log('✅ 자동 임베딩 생성 완료');
-            toast.success('지식 노드가 생성되고 AI 검색이 활성화되었습니다!');
+
+            // 🔗 자동 링크 생성 (임베딩 생성 후)
+            try {
+              console.log('🔗 자동 링크 추천 및 생성 시작...');
+
+              // 유사한 노드 찾기
+              const similarNodes = await embeddingService.embeddingService.findSimilarNodes(result.id, {
+                limit: 10,
+                similarity_threshold: 0.6,
+                exclude_self: true
+              });
+
+              if (similarNodes && similarNodes.length > 0) {
+                console.log(`✅ ${similarNodes.length}개의 유사한 노드 발견`);
+
+                // 기존 관계 확인
+                const existingRelationships = await knowledgeService.getNodeRelationships(result.id);
+                const existingTargetIds = new Set();
+
+                if (existingRelationships && Array.isArray(existingRelationships)) {
+                  existingRelationships.forEach(rel => {
+                    if (rel.source_node_id === result.id) {
+                      existingTargetIds.add(rel.target_node_id);
+                    } else if (rel.target_node_id === result.id) {
+                      existingTargetIds.add(rel.source_node_id);
+                    }
+                  });
+                }
+
+                // 자동으로 모든 추천 링크 생성
+                let createdLinksCount = 0;
+                for (const node of similarNodes) {
+                  // 이미 관계가 있는 노드는 제외
+                  if (existingTargetIds.has(node.id)) continue;
+
+                  try {
+                    await knowledgeService.createRelationship({
+                      sourceNodeId: result.id,
+                      targetNodeId: node.id,
+                      relationshipType: 'related_to',
+                      comment: `AI 자동 생성 (유사도: ${Math.round(node.similarity * 100)}%)`
+                    });
+                    createdLinksCount++;
+                    console.log(`✅ "${node.title}"와(과) 링크 생성 완료`);
+                  } catch (linkError) {
+                    console.warn(`⚠️ "${node.title}"와(과) 링크 생성 실패:`, linkError);
+                  }
+                }
+
+                if (createdLinksCount > 0) {
+                  console.log(`✅ 총 ${createdLinksCount}개의 링크가 자동으로 생성되었습니다`);
+                  toast.success(`지식 노드가 생성되고 ${createdLinksCount}개의 관련 지식과 자동으로 연결되었습니다!`);
+                } else {
+                  toast.success('지식 노드가 생성되고 AI 검색이 활성화되었습니다!');
+                }
+              } else {
+                console.log('ℹ️ 연결할 유사한 노드가 없습니다');
+                toast.success('지식 노드가 생성되고 AI 검색이 활성화되었습니다!');
+              }
+            } catch (linkError) {
+              console.error('⚠️ 자동 링크 생성 실패 (노드 생성은 성공):', linkError);
+              toast.success('지식 노드가 생성되고 AI 검색이 활성화되었습니다!');
+            }
+
           } catch (embeddingError) {
             console.error('⚠️ 임베딩 생성 실패 (노드 생성은 성공):', embeddingError);
             toast.success('지식 노드가 생성되었습니다. (AI 검색은 나중에 활성화할 수 있습니다)');
