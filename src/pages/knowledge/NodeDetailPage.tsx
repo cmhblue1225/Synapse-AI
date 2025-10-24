@@ -32,8 +32,6 @@ export const NodeDetailPage: React.FC = () => {
   const navigate = useNavigate();
   const queryClient = useQueryClient();
   const [isAddRelationshipModalOpen, setIsAddRelationshipModalOpen] = useState(false);
-  const [isDiscoveringRelationships, setIsDiscoveringRelationships] = useState(false);
-  const [relationshipSuggestions, setRelationshipSuggestions] = useState<any[]>([]);
   const [isLinkRecommendationOpen, setIsLinkRecommendationOpen] = useState(false);
 
   // AI 기능 상태
@@ -101,60 +99,6 @@ export const NodeDetailPage: React.FC = () => {
     console.log(`새로운 링크 생성됨: ${nodeId} -> ${targetNodeId}`);
   };
 
-  const discoverRelationships = async () => {
-    if (!nodeId) return;
-
-    setIsDiscoveringRelationships(true);
-    try {
-      const result = await aiService.discoverRelationships(nodeId, {
-        threshold: 0.7,
-        maxSuggestions: 3,
-        excludeExisting: true
-      });
-
-      setRelationshipSuggestions(result.suggestions);
-
-      if (result.suggestions.length === 0) {
-        alert('현재 이 노드와 관련된 새로운 관계를 발견하지 못했습니다.');
-      }
-    } catch (error) {
-      console.error('관계 발견 실패:', error);
-      alert('관계 발견 중 오류가 발생했습니다.');
-    } finally {
-      setIsDiscoveringRelationships(false);
-    }
-  };
-
-  const applySuggestion = async (suggestion: any) => {
-    try {
-      await aiService.applyRelationshipSuggestion(
-        nodeId!,
-        suggestion.targetNodeId,
-        suggestion.relationshipType,
-        suggestion.confidence,
-        suggestion.explanation
-      );
-
-      // 제안 목록에서 제거
-      setRelationshipSuggestions(prev =>
-        prev.filter(s => s.targetNodeId !== suggestion.targetNodeId)
-      );
-
-      // 관계 데이터 새로고침
-      queryClient.invalidateQueries({ queryKey: ['node-relationships', nodeId] });
-
-      alert('관계가 성공적으로 추가되었습니다!');
-    } catch (error) {
-      console.error('관계 적용 실패:', error);
-      alert('관계 추가 중 오류가 발생했습니다.');
-    }
-  };
-
-  const dismissSuggestion = (targetNodeId: string) => {
-    setRelationshipSuggestions(prev =>
-      prev.filter(s => s.targetNodeId !== targetNodeId)
-    );
-  };
 
   // AI 요약 생성 (기존 노드용)
   const generateSummary = async () => {
@@ -787,73 +731,13 @@ export const NodeDetailPage: React.FC = () => {
                         className="inline-flex items-center px-3 py-2 border border-transparent shadow-sm text-sm leading-4 font-medium rounded-md text-white bg-gradient-to-r from-blue-500 to-cyan-500 hover:from-blue-600 hover:to-cyan-600 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500"
                       >
                         <svg className="h-4 w-4 mr-1" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9.663 17h4.673M12 3v1m6.364 1.636l-.707.707M21 12h-1M4 12H3m3.343-5.657l-.707-.707m2.828 9.9a5 5 0 117.072 0l-.548.547A3.374 3.374 0 0014 18.469V19a2 2 0 11-4 0v-.531c0-.895-.356-1.754-.988-2.386l-.548-.547z" />
+                          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0zM13 10H7" />
                         </svg>
-                        AI 링크 추천
-                      </button>
-
-                      <button
-                        onClick={discoverRelationships}
-                        disabled={isDiscoveringRelationships}
-                        className="inline-flex items-center px-3 py-2 border border-transparent shadow-sm text-sm leading-4 font-medium rounded-md text-white bg-gradient-to-r from-purple-500 to-pink-500 hover:from-purple-600 hover:to-pink-600 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-purple-500 disabled:opacity-50"
-                      >
-                        {isDiscoveringRelationships ? (
-                          <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-white mr-1"></div>
-                        ) : (
-                          <svg className="h-4 w-4 mr-1" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13 10V3L4 14h7v7l9-11h-7z" />
-                          </svg>
-                        )}
-                        {isDiscoveringRelationships ? 'AI 분석 중...' : 'AI 관계 발견'}
+                        추가 링크 찾기
                       </button>
                     </div>
                   </div>
 
-                  {/* AI 관계 제안 */}
-                  {relationshipSuggestions.length > 0 && (
-                    <div className="mb-4">
-                      <h4 className="text-sm font-medium text-purple-900 mb-2 flex items-center">
-                        <svg className="h-4 w-4 mr-2" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13 10V3L4 14h7v7l9-11h-7z" />
-                        </svg>
-                        AI 관계 제안
-                      </h4>
-                      <div className="space-y-2">
-                        {relationshipSuggestions.map((suggestion) => (
-                          <div
-                            key={suggestion.targetNodeId}
-                            className="flex items-center justify-between p-3 bg-gradient-to-r from-purple-50 to-pink-50 border border-purple-200 rounded-lg"
-                          >
-                            <div className="flex-1 min-w-0">
-                              <div className="font-medium text-purple-900 break-words overflow-wrap-anywhere">
-                                {suggestion.targetNodeTitle}
-                              </div>
-                              <div className="text-xs text-purple-600 break-words overflow-wrap-anywhere">
-                                {suggestion.relationshipType.replace('_', ' ')} • 신뢰도: {Math.round(suggestion.confidence * 100)}%
-                              </div>
-                              <div className="text-xs text-purple-500 mt-1 break-words overflow-wrap-anywhere">
-                                {suggestion.explanation}
-                              </div>
-                            </div>
-                            <div className="flex space-x-1">
-                              <button
-                                onClick={() => applySuggestion(suggestion)}
-                                className="px-2 py-1 text-xs bg-purple-500 text-white rounded hover:bg-purple-600"
-                              >
-                                적용
-                              </button>
-                              <button
-                                onClick={() => dismissSuggestion(suggestion.targetNodeId)}
-                                className="px-2 py-1 text-xs bg-gray-300 text-gray-700 rounded hover:bg-gray-400"
-                              >
-                                무시
-                              </button>
-                            </div>
-                          </div>
-                        ))}
-                      </div>
-                    </div>
-                  )}
                 </div>
 
                 {/* 메타데이터 */}
